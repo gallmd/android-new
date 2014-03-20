@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Handle Layout -->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/play_control_handle"
+    android:layout_width="match_parent"
+    android:layout_height="66dp"
+    android:background="@drawable/play_control_handle_gradient" 
+    android:clickable="true">
+
+    <TextView
+        android:id="@+id/txtArtist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="6dp"
+        android:layout_marginTop="6dp"
+        android:text="@string/lbl_artist"
+        android:textColor="#F2ffffff"
+        android:textSize="22sp" >
+    </TextView>
+
+    <TextView
+        android:id="@+id/txtSong"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="6dp"
+        android:layout_marginLeft="14dp"
+        android:text="@string/lbl_song"
+        android:textColor="#F2ffffff"
+        android:textSize="20sp" >
+    </TextView>
+
+</RelativeLayout>

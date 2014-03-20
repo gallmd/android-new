@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+    <PreferenceCategory 
+        android:name="Connection Settings"
+        android:key="connection_settings">
+        
+        <EditTextPreference 
+            android:key="pref_ip_address"
+            android:title="IP Address"
+            android:summary="Enter IP Address of server to connect to"
+            android:dialogTitle="IP Address"
+            android:dialogMessage="Enter IP Address"
+            android:defaultValue="@string/default_ip_address"
+            />
+        
+        <EditTextPreference 
+            android:key="pref_port_number"
+            android:title="Port Number"
+            android:summary="Enter Port Number of server to connect to"
+            android:dialogTitle="Port Number"
+            android:dialogMessage="Enter Port Number"
+            android:defaultValue="@string/default_port_number"
+            />
+        
+    </PreferenceCategory>
+    
+
+</PreferenceScreen>
