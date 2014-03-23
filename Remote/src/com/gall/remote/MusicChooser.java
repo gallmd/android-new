@@ -1,5 +1,6 @@
 package com.gall.remote;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.SocketException;
@@ -9,6 +10,7 @@ import android.app.ActionBar.Tab;
 import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.SQLException;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -25,6 +27,7 @@ import com.gall.remote.DTO.SongFile;
 import com.gall.remote.adapters.MusicChooserTabAdaper;
 import com.gall.remote.network.AddressInfo;
 import com.gall.remote.network.NetworkOperations;
+import com.gall.remote.network.RemoteService;
 
 /**
  * Main Activity:
@@ -45,6 +48,7 @@ public class MusicChooser extends FragmentActivity implements ActionBar.TabListe
 	private String[] tabNames = {"Artists", "Albums", "Songs", "Play Lists"};
 	private NetworkConnectTask nct;
 	private AddressInfo ai;
+	private Intent mServiceIntent;
 
 	/**
 	 * **********************************************************************************************
@@ -56,7 +60,7 @@ public class MusicChooser extends FragmentActivity implements ActionBar.TabListe
 		//Initialization
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.music_chooser_layout);
-
+		
 		//Set up ViewPager
 		pager = (ViewPager) findViewById(R.id.pager);
 		actionBar = getActionBar();
@@ -84,7 +88,12 @@ public class MusicChooser extends FragmentActivity implements ActionBar.TabListe
 		} catch (Exception ex) {
 			// Ignore
 		}
-
+		
+		SharedPreferences sharedPrefs = getPreferences(MODE_PRIVATE);
+		String defaultIP = getResources().getString(R.string.default_ip_address);
+		String prefIP = sharedPrefs.getString("pref_ip_address", defaultIP);
+		Toast.makeText(getApplicationContext(), prefIP, Toast.LENGTH_SHORT).show();
+		
 		connectToServer();
 
 	}
@@ -128,13 +137,20 @@ public class MusicChooser extends FragmentActivity implements ActionBar.TabListe
 	 */
 
 	public void connectToServer(){
-		ai = new AddressInfo();
-		ai.setIP(getResources().getString(R.string.default_ip_address));
-		ai.setPortNumber(Integer.parseInt("3490"));
-
-		netop = new NetworkOperations();
-		nct = new NetworkConnectTask(getApplicationContext());
-		nct.execute(ai);
+//		ai = new AddressInfo();
+//		ai.setIP(getResources().getString(R.string.default_ip_address));
+//		ai.setPortNumber(Integer.parseInt("3490"));
+//
+//		netop = new NetworkOperations();
+//		nct = new NetworkConnectTask(getApplicationContext());
+//		nct.execute(ai);
+		
+		//Start Network Service
+		mServiceIntent = new Intent(getApplicationContext(), RemoteService.class);
+		mServiceIntent.putExtra("ip", getResources().getString(R.string.default_ip_address));
+		mServiceIntent.putExtra("port", getResources().getString(R.string.default_port_number));
+		getApplicationContext().startService(mServiceIntent);
+		
 
 	}
 
@@ -174,7 +190,7 @@ public class MusicChooser extends FragmentActivity implements ActionBar.TabListe
 	public boolean onMenuItemSelected(int featureId, MenuItem item) {
 		// TODO Auto-generated method stub
 		
-		switch(featureId){
+		switch(item.getItemId()){
 		case R.id.action_settings:
 			Intent settingsIntent = new Intent(this, UserPreferencesActivity.class);
 			startActivity(settingsIntent);
@@ -228,7 +244,12 @@ public class MusicChooser extends FragmentActivity implements ActionBar.TabListe
 
 			//create new NetworkOperations and run connect method
 			NetworkOperations connectnetop = new NetworkOperations();
-			connectnetop.connectToServer(ia, portNumber);
+			try {
+				connectnetop.connectToServer(ia, portNumber);
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			publishProgress(connectnetop);
 
 			//infinite loop

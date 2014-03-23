@@ -17,7 +17,7 @@
         <item name="filler3">test</item>
         <item name="filler4">test</item>
     </string-array>
-    
+    <string name="shared_pref_key">Shared Preferences Key</string>
     <string name="default_ip_address">192.168.1.5</string>
     <string name="default_port_number">3490</string>
     <string name="lbl_artist">Artist: </string>

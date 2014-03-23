@@ -1,5 +1,6 @@
 package com.gall.remote.network;
 
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -12,6 +13,9 @@ import java.net.UnknownHostException;
 
 public class AddressInfo {
 	
+	/**
+	 * 
+	 */
 	private InetAddress ipAddress;
 	private int portNumber;
 	

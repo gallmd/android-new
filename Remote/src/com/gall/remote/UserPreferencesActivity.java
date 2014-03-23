@@ -12,4 +12,5 @@ public class UserPreferencesActivity extends PreferenceActivity {
         addPreferencesFromResource(R.xml.preference_screen);
  
     }
+    
 }
