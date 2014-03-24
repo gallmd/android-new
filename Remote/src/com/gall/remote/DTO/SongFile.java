@@ -11,6 +11,7 @@ public class SongFile implements Comparable<SongFile> {
 	private String name;
 	private int totalTime;
 	private int trackNumber;
+	private int imageID;
 	
 	//getters
 	public int getTrackID() {
@@ -30,6 +31,9 @@ public class SongFile implements Comparable<SongFile> {
 	}
 	public int getTrackNumber() {
 		return trackNumber;
+	}
+	public int getImageID(){
+		return imageID;
 	}
 	
 	//setters
@@ -51,6 +55,11 @@ public class SongFile implements Comparable<SongFile> {
 	public void setTrackNumber(int trackNumber) {
 		this.trackNumber = trackNumber;
 	}
+	public void setImageID(int imageID){
+		this.imageID = imageID;
+	}
+	
+	//comparators
 	@Override
 	public int compareTo(SongFile compareSong) {
 		
@@ -94,6 +103,20 @@ public class SongFile implements Comparable<SongFile> {
 			String songName2 = song2.getAlbum().toUpperCase(Locale.US);
 			
 			return songName1.compareTo(songName2);
+		}
+		
+	};
+	
+	//Sort by Track Number Comparator
+	public static Comparator<SongFile> sortByTrackNumber = new Comparator<SongFile>(){
+
+		@Override
+		public int compare(SongFile song1, SongFile song2) {
+			
+			int trackNumber1 = song1.getTrackNumber();
+			int trackNumber2 = song2.getTrackNumber();
+			
+			return trackNumber1 - trackNumber2;
 		}
 		
 	};

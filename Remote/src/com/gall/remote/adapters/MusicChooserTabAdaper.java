@@ -1,41 +1,62 @@
 package com.gall.remote.adapters;
 
+import android.app.Fragment;
+import android.os.Bundle;
 import com.gall.remote.fragments.AlbumsFragment;
 import com.gall.remote.fragments.ArtistsFragment;
 import com.gall.remote.fragments.SongsFragment;
-
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
+import com.gall.remote.network.Constants;
 
 /**
  * TabAdapter for MusicChooser ViewPager
  * @author Matt Gall
  *
  */
-public class MusicChooserTabAdaper extends FragmentPagerAdapter {
+public class MusicChooserTabAdaper extends android.support.v13.app.FragmentPagerAdapter {
 	
-	public MusicChooserTabAdaper(FragmentManager fm) {
-		super(fm);
-		// TODO Auto-generated constructor stub
+	private Bundle bundle;
+
+	public MusicChooserTabAdaper(android.app.FragmentManager fragmentManager) {
+		super(fragmentManager);
 	}
 	
 	@Override
-	public android.support.v4.app.Fragment getItem(int index){
+	public Fragment getItem(int index){
+
+		
 		switch(index){
-		case 0:
-			return new ArtistsFragment();
-		case 1:
-			return new AlbumsFragment();
-		case 2:
-			return new SongsFragment();
+		
+		case 0: //Artists Fragment
+			
+			bundle = new Bundle();
+			bundle.putString(Constants.Keys.SEARCH_TYPE, Constants.SearchTypes.ARTISTS_ALL);
+			ArtistsFragment af = new ArtistsFragment();
+			af.setArguments(bundle);
+			return  af;
+			
+		case 1: //Albums Fragment
+			
+			bundle = new Bundle();
+			bundle.putString(Constants.Keys.SEARCH_TYPE, Constants.SearchTypes.ALBUMS_ALL);
+			AlbumsFragment abf = new AlbumsFragment();
+			abf.setArguments(bundle);
+			return abf;
+			
+		case 2: //Songs Fragment
+			
+			bundle = new Bundle();
+			bundle.putString(Constants.Keys.SEARCH_TYPE, Constants.SearchTypes.SONGS_ALL);
+			SongsFragment sf = new SongsFragment();
+			sf.setArguments(bundle);
+			return sf;
 		
 		}
+		
 		return null;
 	}
 
 	@Override
 	public int getCount() {
-		// TODO Auto-generated method stub
 		return 3;
 	}
 

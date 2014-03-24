@@ -1,7 +1,7 @@
 package com.gall.remote.DAO;
 
 import java.util.ArrayList;
-import java.util.TreeSet;
+import java.util.Collections;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -9,7 +9,9 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteQueryBuilder;
 
+import com.gall.remote.R;
 import com.gall.remote.DTO.SongFile;
 
 public class SongDatabaseDAO extends SQLiteOpenHelper {
@@ -27,7 +29,6 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 
 	public SongDatabaseDAO(Context context) {
 		super(context, "remotesongdatabase.db", null, 1);
-		// TODO Auto-generated constructor stub
 	}
 
 
@@ -53,6 +54,7 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 		String schema = "CREATE TABLE " + SONGS + " ( " + _ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +  NAME + " TEXT, " + ARTIST + " TEXT, " + ALBUM + " TEXT, " + TOTALTIME + " INTEGER, " + TRACKNUMBER + " INTEGER);";
 		db.execSQL(schema);
 	}
+	
 	/*
 	 * Deletes SONGS table
 	 */
@@ -62,40 +64,8 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-		// TODO Auto-generated method stub
 
 	}
-
-	/**
-	 * Find song in songs database by GUID (Track ID)
-	 * @param id - GUID to search by
-	 * @return SongFile - the Songfile that matches the input GUID
-	 */
-	//	public SongFile fetchSongByGuid(int id){
-	//		SongFile sf = null;
-	//
-	//
-	//		String sqlQuery = "SELECT " + columns + " FROM " + SONGS + " WHERE " + GUID + " = " + id;
-	//
-	//		Cursor cursor = getReadableDatabase().rawQuery(sqlQuery, null);
-	//
-	//		if(cursor.getCount() == 1){
-	//
-	//			cursor.moveToFirst();
-	//			sf = new SongFile();
-	//
-	//			sf.setTrackID(cursor.getInt(0));
-	//			sf.setName(cursor.getString(1));
-	//			sf.setArtist(cursor.getString(2));
-	//			sf.setAlbum(cursor.getString(3));
-	//			sf.setTotalTime(cursor.getInt(4));
-	//			sf.setTrackNumber(cursor.getInt(5));
-	//
-	//		}
-	//
-	//		return sf;
-	//
-	//	}
 
 	/**
 	 * Searches database by song name
@@ -122,6 +92,8 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 				sf.setAlbum(cursor.getString(2));
 				sf.setTotalTime(cursor.getInt(3));
 				sf.setTrackNumber(cursor.getInt(4));
+				sf.setImageID(R.drawable.ic_song);
+
 				allSongs.add(sf);
 
 			}
@@ -131,6 +103,44 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 		cursor.close();
 		return allSongs;
 	}
+	
+	public ArrayList<SongFile> fetchSongsByAlbum(String artist, String album){
+		
+		ArrayList<SongFile> songsByAlbum = new ArrayList<SongFile>();
+		
+		
+		//Check for apostrophe
+		album = album.replace("'", "''");
+		
+		getReadableDatabase().execSQL(schemaCheckExists);
+		String[] queryColumns = {NAME, TOTALTIME, TRACKNUMBER};
+		String query = SQLiteQueryBuilder.buildQueryString(false, SONGS, queryColumns, ALBUM + "='" + album +"'", null, null, null, null);
+		Cursor cursor = getReadableDatabase().rawQuery(query, null);
+		
+		if(cursor.getCount() > 0){
+			
+			cursor.moveToFirst();
+			
+			while(!cursor.isAfterLast()){
+				
+				SongFile sf = new SongFile();
+				sf.setName(cursor.getString(0));
+				sf.setArtist(artist);
+				sf.setAlbum(album);
+				sf.setTotalTime(cursor.getInt(1));
+				sf.setTrackNumber(cursor.getInt(2));
+				sf.setImageID(R.drawable.ic_song);
+
+				songsByAlbum.add(sf);
+				
+				cursor.moveToNext();
+			}
+		}
+		
+		cursor.close();
+		Collections.sort(songsByAlbum, SongFile.sortByTrackNumber);
+		return songsByAlbum;
+	}
 
 
 	public ArrayList<SongFile> fetchAllSongs(){
@@ -138,9 +148,10 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 		ArrayList<SongFile> allSongs = new ArrayList<SongFile>();
 		
 		getReadableDatabase().execSQL(schemaCheckExists);
-		String sqlQuery = "SELECT " + columns + " FROM " + SONGS;
-		Cursor cursor = getReadableDatabase().rawQuery(sqlQuery, null);
-
+		String[] queryColumns = {NAME, ARTIST, ALBUM, TOTALTIME, TRACKNUMBER};
+		String query = SQLiteQueryBuilder.buildQueryString(true, SONGS, queryColumns, null, null, null, NAME +" ASC", null);
+		Cursor cursor = getReadableDatabase().rawQuery(query, null);
+		
 		if(cursor.getCount() > 0){
 
 			cursor.moveToFirst();
@@ -153,6 +164,7 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 				sf.setAlbum(cursor.getString(2));
 				sf.setTotalTime(cursor.getInt(3));
 				sf.setTrackNumber(cursor.getInt(4));
+				sf.setImageID(R.drawable.ic_song);
 				allSongs.add(sf);
 
 				cursor.moveToNext();
@@ -164,25 +176,32 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 
 	}
 
-	public TreeSet<SongFile> fetchAllArtists(){
-		TreeSet<SongFile> allArtists = new TreeSet<SongFile>(SongFile.sortByArtist);
+	/**
+	 * Returns an ArrayList of SongFiles, sorted in ascending order by artist, with only the artist and image id fields populated
+	 * List will be displayed in the "All Artists" ArtistsFragment
+	 * @return
+	 */
+	public ArrayList<SongFile> fetchAllArtists(){
+		ArrayList<SongFile> allArtists = new ArrayList<SongFile>();
+		
+		//If SONGS table doesn't exist, create it
 		getReadableDatabase().execSQL(schemaCheckExists);
-
-		String sqlQuery = "SELECT " + columns + " FROM " + SONGS;
-		Cursor cursor = getReadableDatabase().rawQuery(sqlQuery, null);
+		
+		//Create query using query builder
+		String[] queryColumns = {ARTIST};
+		String query = SQLiteQueryBuilder.buildQueryString(true, SONGS, queryColumns, null, null, null, ARTIST + " ASC", null);
+		Cursor cursor = getReadableDatabase().rawQuery(query, null);
 
 		if(cursor.getCount() > 0){
 
 			cursor.moveToFirst();
 
 			while(!cursor.isAfterLast()){
-
+				
+				//For list of artists, all that is needed is the artist name and a picture
 				SongFile sf = new SongFile();
-				sf.setArtist(cursor.getString(1));
-				sf.setName(cursor.getString(0));
-				sf.setAlbum(cursor.getString(2));
-				sf.setTotalTime(cursor.getInt(3));
-				sf.setTrackNumber(cursor.getInt(4));
+				sf.setArtist(cursor.getString(0));
+				sf.setImageID(R.drawable.ic_artist);
 				allArtists.add(sf);
 
 				cursor.moveToNext();
@@ -190,18 +209,24 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 		}
 		
 		cursor.close();
+		
 		return allArtists;
 	}
 	
 	/*
-	 * Returns a TreeSet of song files sorted by album
+	 * Returns an ArrayList of song files sorted by album
 	 */
-	public TreeSet<SongFile> fetchAllAlbums(){
-		TreeSet<SongFile> allArtists = new TreeSet<SongFile>(SongFile.sortByAlbum);
+	public ArrayList<SongFile> fetchAllAlbums(){
+		
+		ArrayList<SongFile> allAlbums = new ArrayList<SongFile>();
+		
+		//If SONGS table doesn't exist, create it
 		getReadableDatabase().execSQL(schemaCheckExists);
 
-		String sqlQuery = "SELECT " + columns + " FROM " + SONGS;
-		Cursor cursor = getReadableDatabase().rawQuery(sqlQuery, null);
+		//Create query using query builder
+		String[] queryColumns = {ALBUM};
+		String query = SQLiteQueryBuilder.buildQueryString(true, SONGS, queryColumns, null, null, null, ALBUM + " ASC", null);
+		Cursor cursor = getReadableDatabase().rawQuery(query, null);
 
 		if(cursor.getCount() > 0){
 
@@ -210,20 +235,20 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 			while(!cursor.isAfterLast()){
 
 				SongFile sf = new SongFile();
-				sf.setArtist(cursor.getString(1));
-				sf.setName(cursor.getString(0));
-				sf.setAlbum(cursor.getString(2));
-				sf.setTotalTime(cursor.getInt(3));
-				sf.setTrackNumber(cursor.getInt(4));
+				
+				sf.setAlbum(cursor.getString(0));
+				sf.setImageID(R.drawable.ic_album);
 
-				allArtists.add(sf);
+				allAlbums.add(sf);
 
 				cursor.moveToNext();
 
 			}
 		}
+		
 		cursor.close();
-		return allArtists;
+		
+		return allAlbums;
 
 	}
 

@@ -2,7 +2,6 @@ package com.gall.remote.adapters;
 
 import java.util.List;
 
-
 import android.app.Activity;
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -13,6 +12,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.gall.remote.R;
+import com.gall.remote.DTO.SongFile;
 
 /**
  * List adapter for music Chooser
@@ -25,11 +25,11 @@ import com.gall.remote.R;
  * @author Matt Gall
  *
  */
-public class MusicChooserAdapter extends ArrayAdapter<RowItem> {
+public class ArtistFragmentAdapter extends ArrayAdapter<SongFile> {
 	private Context c;
 
 	//Constructor
-	public MusicChooserAdapter(Context c, int resourceID, List<RowItem> items){
+	public ArtistFragmentAdapter(Context c, int resourceID, List<SongFile> items){
 		super(c, resourceID, items);
 		this.c = c;
 	}
@@ -43,7 +43,7 @@ public class MusicChooserAdapter extends ArrayAdapter<RowItem> {
 	public View getView(int position, View convertView, ViewGroup parent){
 
 		ViewHolder holder = null;
-		RowItem rowItem = getItem(position);
+		SongFile sf = getItem(position);
 
 		LayoutInflater inflater = (LayoutInflater) c.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
 
@@ -61,8 +61,8 @@ public class MusicChooserAdapter extends ArrayAdapter<RowItem> {
 
 		}
 
-		holder.titleTxt.setText(rowItem.getTitle());
-		holder.imageView.setImageResource(rowItem.getImageID());
+		holder.titleTxt.setText(sf.getArtist());
+		holder.imageView.setImageResource(sf.getImageID());
 
 
 		return convertView;

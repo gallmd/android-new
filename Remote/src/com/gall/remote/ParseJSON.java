@@ -12,7 +12,6 @@ private String artist;
 private String album;
 private String trackNumber;
 private String totalTime;
-private String trackID;
 private SongFile sf;
 
 

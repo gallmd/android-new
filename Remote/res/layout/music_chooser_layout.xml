@@ -2,16 +2,17 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="#ffffff">
-    
-    <android.support.v4.view.ViewPager
-        android:id="@+id/pager"
+    android:background="#ffffff" >
+
+    <RelativeLayout
+        android:id="@+id/fragmentContainer"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:layout_gravity="top"
-        android:filterTouchesWhenObscured="true" />
-    
-	    <SlidingDrawer
+        android:filterTouchesWhenObscured="true" >
+    </RelativeLayout>
+
+    <SlidingDrawer
         android:id="@+id/drwrPlayControls"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -19,13 +20,14 @@
         android:content="@+id/play_control_layout"
         android:handle="@+id/play_control_handle"
         android:orientation="vertical" >
-        
-		<!-- Handle Layout -->
-		<include layout="@layout/play_control_handle" />
-		
-        <!-- Content Layout -->
-        <include layout="@layout/play_control_layout"/>
 
+        <!-- Handle Layout -->
+
+        <include layout="@layout/play_control_handle" />
+
+        <!-- Content Layout -->
+
+        <include layout="@layout/play_control_layout" />
     </SlidingDrawer>
 
 </FrameLayout>

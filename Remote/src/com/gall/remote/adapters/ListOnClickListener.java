@@ -1,7 +1,7 @@
 package com.gall.remote.adapters;
 
 import java.util.List;
-
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.view.Gravity;
@@ -20,6 +20,7 @@ public class ListOnClickListener extends Activity implements OnItemClickListener
 	private Context c;
 	private List<RowItem> rowItems;
 	private String toastString;
+	@SuppressLint("Registered")
 	public ListOnClickListener(Context c, List<RowItem> rowItems){
 		this.c = c;
 		this.rowItems = rowItems;
