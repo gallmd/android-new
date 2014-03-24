@@ -114,7 +114,7 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 		
 		getReadableDatabase().execSQL(schemaCheckExists);
 		String[] queryColumns = {NAME, TOTALTIME, TRACKNUMBER};
-		String query = SQLiteQueryBuilder.buildQueryString(false, SONGS, queryColumns, ALBUM + "='" + album +"'", null, null, null, null);
+		String query = SQLiteQueryBuilder.buildQueryString(false, SONGS, queryColumns, ALBUM + "='" + album +"' AND " + ARTIST + "='" + artist + "'", null, null, null, null);
 		Cursor cursor = getReadableDatabase().rawQuery(query, null);
 		
 		if(cursor.getCount() > 0){
@@ -224,7 +224,7 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 		getReadableDatabase().execSQL(schemaCheckExists);
 
 		//Create query using query builder
-		String[] queryColumns = {ALBUM};
+		String[] queryColumns = {ALBUM, ARTIST};
 		String query = SQLiteQueryBuilder.buildQueryString(true, SONGS, queryColumns, null, null, null, ALBUM + " ASC", null);
 		Cursor cursor = getReadableDatabase().rawQuery(query, null);
 
@@ -237,6 +237,7 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 				SongFile sf = new SongFile();
 				
 				sf.setAlbum(cursor.getString(0));
+				sf.setArtist(cursor.getString(1));
 				sf.setImageID(R.drawable.ic_album);
 
 				allAlbums.add(sf);
@@ -251,5 +252,49 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 		return allAlbums;
 
 	}
+	
+	/*
+	 * Returns an ArrayList of song files sorted by album
+	 */
+	public ArrayList<SongFile> fetchAlbumsByArtist(String artist){
+		
+		ArrayList<SongFile> allAlbums = new ArrayList<SongFile>();
+		
+		//Check for apostrophe
+		artist = artist.replace("'", "''");
+		
+		//If SONGS table doesn't exist, create it
+		getReadableDatabase().execSQL(schemaCheckExists);
+
+		//Create query using query builder
+		String[] queryColumns = {ALBUM};
+		String query = SQLiteQueryBuilder.buildQueryString(true, SONGS, queryColumns, ARTIST + "='" + artist +"'", null, null, ALBUM + " ASC", null);
+		Cursor cursor = getReadableDatabase().rawQuery(query, null);
+
+		if(cursor.getCount() > 0){
+
+			cursor.moveToFirst();
+
+			while(!cursor.isAfterLast()){
+
+				SongFile sf = new SongFile();
+				
+				sf.setAlbum(cursor.getString(0));
+				sf.setArtist(artist);
+				sf.setImageID(R.drawable.ic_album);
+
+				allAlbums.add(sf);
+
+				cursor.moveToNext();
+
+			}
+		}
+		
+		cursor.close();
+		
+		return allAlbums;
+
+	}
+	
 
 }

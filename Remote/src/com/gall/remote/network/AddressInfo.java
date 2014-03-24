@@ -1,6 +1,5 @@
 package com.gall.remote.network;
 
-import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -36,7 +35,6 @@ public class AddressInfo {
 			i = InetAddress.getByName(ipString);
 			ipAddress = i;
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		

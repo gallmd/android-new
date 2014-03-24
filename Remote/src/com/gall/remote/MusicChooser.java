@@ -12,6 +12,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.widget.SlidingDrawer;
 import android.widget.Toast;
 
 import com.gall.remote.network.RemoteService;
@@ -26,9 +27,11 @@ import com.gall.remote.network.RemoteService;
  * @author Matt Gall
  *
  */
+@SuppressWarnings("deprecation")
 public class MusicChooser extends FragmentActivity{
 
 	private Intent mServiceIntent;
+	private SlidingDrawer drawer;
 
 	/**
 	 * **********************************************************************************************
@@ -40,13 +43,14 @@ public class MusicChooser extends FragmentActivity{
 		//Initialization
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.music_chooser_layout);
+		drawer = (SlidingDrawer) findViewById(R.id.drwrPlayControls);
 
 		//Add Fragment
 		Fragment viewPagerFragment = new viewPagerFragment();
 		FragmentTransaction transaction = getFragmentManager().beginTransaction();
 
 		transaction.add(R.id.fragmentContainer, viewPagerFragment);
-		transaction.addToBackStack(null);
+		transaction.addToBackStack("Remote");
 		transaction.commit();
 
 
@@ -108,19 +112,37 @@ public class MusicChooser extends FragmentActivity{
 			break;
 
 		}
-		
+
 
 	}
-	
+
 	@Override
 	public void onBackPressed(){
-		
+
 		android.app.FragmentManager fm = getFragmentManager();
-		
-		if(fm.getBackStackEntryCount() > 1){
-			fm.popBackStack();
+
+		if(!drawer.isOpened()){
+			//Only pop back stack if drawer is closed
+			int backStackCount = fm.getBackStackEntryCount();
+
+			if(backStackCount > 1){
+				//pop back stack if we have moved past the home fragment tabs
+				String entryName = fm.getBackStackEntryAt(backStackCount-1).getName();
+				fm.popBackStack();
+				
+				if(backStackCount > 2){
+					//Set action bar to back stack name
+					getActionBar().setTitle(entryName);
+				}else{
+					//if we popped back to the home fragment tabs, set the action bar title back to "Remote"
+					getActionBar().setTitle("Remote");
+				}
+			}
+		}else{
+			//if the drawer is open, close it
+			drawer.close();
 		}
-		
+
 	}
 
 
@@ -129,13 +151,13 @@ public class MusicChooser extends FragmentActivity{
 	public boolean onMenuItemSelected(int featureId, MenuItem item) {
 
 		switch(item.getItemId()){
-		
+
 		case R.id.action_settings:
 			Intent settingsIntent = new Intent(this, UserPreferencesActivity.class);
 			startActivity(settingsIntent);
 			break;
 		}
-		
+
 		return super.onMenuItemSelected(featureId, item);
 	}
 

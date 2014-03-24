@@ -2,10 +2,11 @@ package com.gall.remote.adapters;
 
 import android.app.Fragment;
 import android.os.Bundle;
+
+import com.gall.remote.Constants;
 import com.gall.remote.fragments.AlbumsFragment;
 import com.gall.remote.fragments.ArtistsFragment;
 import com.gall.remote.fragments.SongsFragment;
-import com.gall.remote.network.Constants;
 
 /**
  * TabAdapter for MusicChooser ViewPager

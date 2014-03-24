@@ -10,11 +10,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 
+import com.gall.remote.Constants;
 import com.gall.remote.R;
 import com.gall.remote.DAO.SongDatabaseDAO;
 import com.gall.remote.DTO.SongFile;
 import com.gall.remote.adapters.ArtistFragmentAdapter;
-import com.gall.remote.network.Constants;
 
 /**
  * Fragment that displays a list of artists to choose from
@@ -27,8 +27,7 @@ public class ArtistsFragment extends ListFragment {
 	private ArrayList<SongFile> allArtists;
 
 	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container,
-			Bundle savedInstanceState) {
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		
 		View rootView = inflater.inflate(R.layout.fragment_list, container, false);
 		
@@ -36,8 +35,10 @@ public class ArtistsFragment extends ListFragment {
 		searchType = getArguments().getString(Constants.Keys.SEARCH_TYPE);
 		
 		if(searchType == Constants.SearchTypes.ARTISTS_ALL){
+			
 			SongDatabaseDAO artistDB = new SongDatabaseDAO(getActivity());
 			allArtists = artistDB.fetchAllArtists();
+			
 		}
 
 	
@@ -48,12 +49,13 @@ public class ArtistsFragment extends ListFragment {
 		return rootView;
 	}
 
+	//handle list selections
 	@Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
 
 		super.onListItemClick(l, v, position, id);
 		
-		//Create new Songs Fragment and add arguments based on what album was selected
+		//Create new Albums Fragment and add arguments based on what Artist was selected
 		AlbumsFragment albumsFragment = new AlbumsFragment();
 		Bundle bundle = new Bundle();
 		String artist = allArtists.get(position).getArtist();
@@ -65,7 +67,7 @@ public class ArtistsFragment extends ListFragment {
 		
 		//Create fragment transaction and replace with new songs fragment
 		FragmentTransaction trans = getActivity().getFragmentManager().beginTransaction();
-		trans.addToBackStack(null);
+		trans.addToBackStack(artist);
 		trans.remove(this);
 		trans.add(R.id.fragmentContainer,  albumsFragment);
 

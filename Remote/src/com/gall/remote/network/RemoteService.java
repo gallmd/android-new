@@ -30,7 +30,7 @@ public class RemoteService extends IntentService {
 	protected void onHandleIntent(Intent workIntent) {
 		
 		try {
-			//create InetAddress from passed 'ip' String
+			//create InetAddress from passed 'IP' String
 			String ipAddress = workIntent.getStringExtra("ip");
 			InetAddress address = InetAddress.getByName(ipAddress);
 			
@@ -53,10 +53,9 @@ public class RemoteService extends IntentService {
 		
 	}
 	
-	//Async Network Tasks
+	//A-sync Network Tasks
 		class NetworkConnectTask extends AsyncTask<AddressInfo, NetworkOperations, Void>{
 
-			//		private NetworkRecvTask nrt;
 			private Context mContextConnect;
 			private SongDatabaseDAO db;
 			private ParseJSON parse;
@@ -83,7 +82,6 @@ public class RemoteService extends IntentService {
 				try {
 					connectnetop.connectToServer(ia, portNumber);
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 				publishProgress(connectnetop);
@@ -150,7 +148,6 @@ public class RemoteService extends IntentService {
 
 					} catch (SocketException e) {
 
-						NetworkConnectTask reconnect = new NetworkConnectTask(mContextConnect);
 						e.printStackTrace();
 
 					} 

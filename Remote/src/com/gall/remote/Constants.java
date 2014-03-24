@@ -1,4 +1,4 @@
-package com.gall.remote.network;
+package com.gall.remote;
 
 public class Constants {
 

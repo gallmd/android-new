@@ -10,11 +10,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 
+import com.gall.remote.Constants;
 import com.gall.remote.R;
 import com.gall.remote.DAO.SongDatabaseDAO;
 import com.gall.remote.DTO.SongFile;
 import com.gall.remote.adapters.AlbumFragmentAdapter;
-import com.gall.remote.network.Constants;
 
 /**
  * Fragment to display a list of albums to choose from
@@ -40,9 +40,11 @@ public class AlbumsFragment extends ListFragment {
 			allAlbums = albumsDB.fetchAllAlbums();
 			
 		}else if(searchType == Constants.SearchTypes.ALBUMS_BY_ARTIST){
+			
 			//Add Albums from a specific artist
-			//TODO add fetchAlbumsByArtist method to db DAO
-//			allAlbums = albumsDB.fetchAlbumsByArtist();
+			String artist = getArguments().getString(Constants.Keys.ARTIST);
+			allAlbums = albumsDB.fetchAlbumsByArtist(artist);
+			getActivity().getActionBar().setTitle(artist);
 			
 		}//end if
 
@@ -72,7 +74,7 @@ public class AlbumsFragment extends ListFragment {
 		
 		//Create fragment transaction and replace with new songs fragment
 		FragmentTransaction trans = getActivity().getFragmentManager().beginTransaction();
-		trans.addToBackStack(null);
+		trans.addToBackStack(album);
 		trans.remove(this);
 		trans.add(R.id.fragmentContainer,  songsFragment);
 

@@ -29,7 +29,7 @@ public class NetworkOperations implements Serializable {
 	private boolean connectionStatus;
 	private String recvMessage;
 
-	//TODO fix send/recv (no print line/readline)
+	//TODO fix send/receive (no print line/read line)
 	//TODO make isConnected accurate in every case
 	//TODO actually handle exceptions
 

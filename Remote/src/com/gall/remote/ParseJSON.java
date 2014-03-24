@@ -17,7 +17,7 @@ private SongFile sf;
 
 /**
  * Recv's JSON data for song info one song at a time.
- * Adds the recieved data to the songs database.
+ * Adds the received data to the songs database.
  * 
  * @param jsonString
  */
@@ -28,7 +28,7 @@ public SongFile parse(String jsonString){
 		//Set JSON object from input string
 		JSONObject jsonData = new JSONObject(jsonString);
 		
-		//get data from json object
+		//get data from JSON object
 		name = jsonData.getString("Name");
 		artist = jsonData.getString("Artist");
 		album = jsonData.getString("Album");

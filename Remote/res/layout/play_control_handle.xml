@@ -15,9 +15,11 @@
         android:layout_alignParentTop="true"
         android:layout_marginLeft="6dp"
         android:layout_marginTop="6dp"
+        android:maxLines="1"
         android:text="@string/lbl_artist"
         android:textColor="#F2ffffff"
         android:textSize="22sp" >
+
     </TextView>
 
     <TextView
@@ -28,9 +30,11 @@
         android:layout_alignParentLeft="true"
         android:layout_marginBottom="6dp"
         android:layout_marginLeft="14dp"
+        android:maxLines="1"
         android:text="@string/lbl_song"
         android:textColor="#F2ffffff"
         android:textSize="20sp" >
+
     </TextView>
 
 </RelativeLayout>
