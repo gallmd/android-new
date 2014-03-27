@@ -2,9 +2,9 @@ package com.gall.remote.network;
 
 import android.annotation.SuppressLint;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
@@ -18,6 +18,10 @@ public class RemoteService extends Service {
 	private String portString;
 	private String ipAddress;
 	private RecvHandler mRecvHandler;
+	//Create new messenger with the "FromUIHandler" Class
+	final Messenger mMessenger = new Messenger(new FromUIHandler());
+	private Context c;
+
 
 	//Handles messages sent from bound components
 	@SuppressLint("HandlerLeak")
@@ -32,7 +36,7 @@ public class RemoteService extends Service {
 			//Play Button Pressed
 			case Constants.ServiceMessages.PLAY_PRESSED:
 				Toast.makeText(getApplicationContext(), "Play Pressed", Toast.LENGTH_SHORT).show();
-//				netop.sendMessage("Play");
+				//				netop.sendMessage("Play");
 				sendMessage.arg1 = Constants.ServiceMessages.PLAY_PRESSED;
 				break;
 
@@ -56,11 +60,6 @@ public class RemoteService extends Service {
 		}
 	}
 
-	//Create new messenger with the "FromUIHandler" Class
-	final Messenger mMessenger = new Messenger(new FromUIHandler());
-	private NetworkOperations netop;
-
-
 
 	//Called when service is started
 	@Override
@@ -69,17 +68,7 @@ public class RemoteService extends Service {
 		portString = intent.getStringExtra(Constants.Keys.PORT);
 		ipAddress = intent.getStringExtra(Constants.Keys.IP_ADDRESS);
 
-		HandlerThread thread = new HandlerThread("RecvThread");
-		thread.start();
-
-		Looper mLooper = thread.getLooper();
-		mRecvHandler = new RecvHandler(mLooper, ipAddress, portString);
-		Message msg = mRecvHandler.obtainMessage();
-		msg.what = Constants.NetworkMessages.CONNECT;
-		mRecvHandler.sendMessage(msg);
-		
-//		netop = new NetworkOperations();
-//		new Thread(new ConnectThread(netop, ipAddress, portString)).start();
+		NetworkManager.startConnectTask(ipAddress, portString);
 
 		return START_STICKY;
 	}
@@ -90,6 +79,5 @@ public class RemoteService extends Service {
 	public IBinder onBind(Intent intent) {
 		return mMessenger.getBinder();
 	}
-
 
 }
