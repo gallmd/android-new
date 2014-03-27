@@ -116,9 +116,9 @@ public class SongsFragment extends ListFragment {
 		time = Math.abs(time);
 
 		String timeString = String.format("%d:%d",
-				TimeUnit.MICROSECONDS.toMinutes(time),
-				TimeUnit.MICROSECONDS.toSeconds(time)-
-				TimeUnit.MINUTES.toSeconds(TimeUnit.MICROSECONDS.toMinutes(time)));
+				TimeUnit.NANOSECONDS.toMinutes(time),
+				TimeUnit.NANOSECONDS.toSeconds(time)-
+				TimeUnit.MINUTES.toSeconds(TimeUnit.NANOSECONDS.toMinutes(time)));
 		totalTimeText.setText(timeString);
 
 

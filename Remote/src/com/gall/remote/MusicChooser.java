@@ -4,9 +4,16 @@ import java.lang.reflect.Field;
 
 import android.app.Fragment;
 import android.app.FragmentTransaction;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
 import android.support.v4.app.FragmentActivity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -32,6 +39,9 @@ public class MusicChooser extends FragmentActivity{
 
 	private Intent mServiceIntent;
 	private SlidingDrawer drawer;
+	
+	private Messenger mService;
+	private boolean mBound;
 
 	/**
 	 * **********************************************************************************************
@@ -73,9 +83,11 @@ public class MusicChooser extends FragmentActivity{
 
 		//Start Network Service
 		mServiceIntent = new Intent(getApplicationContext(), RemoteService.class);
-		mServiceIntent.putExtra("ip", getResources().getString(R.string.default_ip_address));
-		mServiceIntent.putExtra("port", getResources().getString(R.string.default_port_number));
-		getApplicationContext().startService(mServiceIntent);
+		mServiceIntent.putExtra(Constants.Keys.IP_ADDRESS, getResources().getString(R.string.default_ip_address));
+		mServiceIntent.putExtra(Constants.Keys.PORT, getResources().getString(R.string.default_port_number));
+		startService(mServiceIntent);
+		
+		bindService(mServiceIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
 	}
 
 
@@ -97,22 +109,32 @@ public class MusicChooser extends FragmentActivity{
 
 	//Handle button presses
 	public void onClick(View button){
+		if(!mBound) return;
+		
+		int msgContent = 0;
+		
 		switch(button.getId()){
 
 		case R.id.btnNext:
-			//Send next track command
+			msgContent = Constants.ServiceMessages.NEXT_PRESSED;
 			break;
 
 		case R.id.btnPlay:
-			//Send Play command
+			msgContent = Constants.ServiceMessages.PLAY_PRESSED;
 			break;
 
 		case R.id.btnPrev:
-			//Send Previous command
+			msgContent = Constants.ServiceMessages.PREVIOUS_PRESSED;
 			break;
 
 		}
-
+		
+		Message msg = Message.obtain(null,msgContent, 0, 0);
+		try {
+			mService.send(msg);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
 
 	}
 
@@ -160,5 +182,25 @@ public class MusicChooser extends FragmentActivity{
 
 		return super.onMenuItemSelected(featureId, item);
 	}
+	
+	
+	
+	private ServiceConnection mServiceConnection = new ServiceConnection(){
+
+		@Override
+		public void onServiceConnected(ComponentName name, IBinder service) {
+
+			mService = new Messenger(service);
+			mBound = true;
+		}
+
+		@Override
+		public void onServiceDisconnected(ComponentName name) {
+
+			mService = null;
+			mBound = false;
+		}
+		
+	};
 
 }

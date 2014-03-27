@@ -1,168 +1,95 @@
 package com.gall.remote.network;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-
-import android.app.IntentService;
-import android.content.Context;
+import android.annotation.SuppressLint;
+import android.app.Service;
 import android.content.Intent;
-import android.database.SQLException;
-import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
+import android.os.Messenger;
 import android.widget.Toast;
 
-import com.gall.remote.ParseJSON;
-import com.gall.remote.DAO.SongDatabaseDAO;
-import com.gall.remote.DTO.SongFile;
+import com.gall.remote.Constants;
 
-public class RemoteService extends IntentService {
-	
-//	private BroadcastNotifier mBroadcast = new BroadcastNotifier();
-	
+public class RemoteService extends Service {
 
+	private String portString;
+	private String ipAddress;
+	private RecvHandler mRecvHandler;
 
-	public RemoteService() {
-		super("Remote Service");
+	//Handles messages sent from bound components
+	@SuppressLint("HandlerLeak")
+	class FromUIHandler extends Handler{
+		@Override
+		public void handleMessage(Message msg) {
+			Message sendMessage = mRecvHandler.obtainMessage();
+			sendMessage.what = Constants.NetworkMessages.SEND_MESSAGE;
+
+			switch(msg.what){
+
+			//Play Button Pressed
+			case Constants.ServiceMessages.PLAY_PRESSED:
+				Toast.makeText(getApplicationContext(), "Play Pressed", Toast.LENGTH_SHORT).show();
+//				netop.sendMessage("Play");
+				sendMessage.arg1 = Constants.ServiceMessages.PLAY_PRESSED;
+				break;
+
+				//Next Button Pressed
+			case Constants.ServiceMessages.NEXT_PRESSED:
+				Toast.makeText(getApplicationContext(), "Next Pressed", Toast.LENGTH_SHORT).show();
+				sendMessage.arg1 = Constants.ServiceMessages.NEXT_PRESSED;
+				break;
+
+				//Previous Button Pressed
+			case Constants.ServiceMessages.PREVIOUS_PRESSED:
+				Toast.makeText(getApplicationContext(), "Previous Pressed", Toast.LENGTH_SHORT).show();
+				sendMessage.arg1 = Constants.ServiceMessages.PREVIOUS_PRESSED;
+				break;
+
+			default:
+				super.handleMessage(msg);
+
+			}
+			mRecvHandler.sendMessage(sendMessage);
+		}
 	}
 
+	//Create new messenger with the "FromUIHandler" Class
+	final Messenger mMessenger = new Messenger(new FromUIHandler());
+	private NetworkOperations netop;
+
+
+
+	//Called when service is started
 	@Override
-	protected void onHandleIntent(Intent workIntent) {
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		//get port and IP address passed by intent
+		portString = intent.getStringExtra(Constants.Keys.PORT);
+		ipAddress = intent.getStringExtra(Constants.Keys.IP_ADDRESS);
+
+		HandlerThread thread = new HandlerThread("RecvThread");
+		thread.start();
+
+		Looper mLooper = thread.getLooper();
+		mRecvHandler = new RecvHandler(mLooper, ipAddress, portString);
+		Message msg = mRecvHandler.obtainMessage();
+		msg.what = Constants.NetworkMessages.CONNECT;
+		mRecvHandler.sendMessage(msg);
 		
-		try {
-			//create InetAddress from passed 'IP' String
-			String ipAddress = workIntent.getStringExtra("ip");
-			InetAddress address = InetAddress.getByName(ipAddress);
-			
-			//Create port number from passed 'port' string
-			String portNumber = workIntent.getStringExtra("port");
-			int port = Integer.parseInt(portNumber);
-			
-			//Create new network operations and connect to server
-			NetworkOperations netop = new NetworkOperations();
-			netop.connectToServer(address, port);
-			
-			
-		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
+//		netop = new NetworkOperations();
+//		new Thread(new ConnectThread(netop, ipAddress, portString)).start();
+
+		return START_STICKY;
 	}
-	
-	//A-sync Network Tasks
-		class NetworkConnectTask extends AsyncTask<AddressInfo, NetworkOperations, Void>{
-
-			private Context mContextConnect;
-			private SongDatabaseDAO db;
-			private ParseJSON parse;
-
-			//Flags
-			private boolean bInCommand = false;
-			private boolean bUpdateFlag = false;
-
-			NetworkConnectTask(Context c){
-				this.mContextConnect = c;
-			}
-
-			@Override
-			protected Void doInBackground(AddressInfo... addressInfos) {
-				Thread.currentThread().setName("Connect Async Task");
-
-				//extract passed address info
-				AddressInfo addressInfo = addressInfos[0];
-				InetAddress ia = addressInfo.getIP();
-				int portNumber = addressInfo.getPort();
-
-				//create new NetworkOperations and run connect method
-				NetworkOperations connectnetop = new NetworkOperations();
-				try {
-					connectnetop.connectToServer(ia, portNumber);
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-				publishProgress(connectnetop);
-
-				//infinite loop
-				while(connectnetop.isConnected()){
-
-					String message;
-					//receive  message
-					try {
-
-						message = connectnetop.recvMessage();
-
-						//handle message
-						//Check if currently in the middle of a multi-message command
-						if(!bInCommand){
-							//if not in a command, figure out which command to start
-
-							//update library command
-							if(message.equalsIgnoreCase("update library")){
-								bUpdateFlag = true;
-								bInCommand = true;
-								parse = new ParseJSON();
-								db = new SongDatabaseDAO(mContextConnect);
-							}
-
-							if(message.equalsIgnoreCase("delete library")){
-								db = new SongDatabaseDAO(mContextConnect);
-								db.dropTable();
-							}
-
-							//Add new commands here
-
-						}else if (bInCommand){
-							//if we got here, we are in the middle of a command
-
-							//update library command
-							if(bUpdateFlag){
-								//check for end of command
-								if(message.equalsIgnoreCase("end of update")){
-
-									bUpdateFlag = false;
-									bInCommand = false;
-
-								}else{
-
-									//carry out command
-									SongFile sf = new SongFile();
-									sf = parse.parse(message);
-
-									if(sf!=null){
-
-										try{
-											db.insertSongs(sf);
-										}catch(SQLException e){
-											e.printStackTrace();
-										}//end catch
-									}
-								}
-							}//end update command
-
-							//Add new commands here
-						}
-
-					} catch (SocketException e) {
-
-						e.printStackTrace();
-
-					} 
-				}
-				return null;
-			}
-
-			@Override
-			protected void onProgressUpdate(NetworkOperations... connectnetop) {
-				Toast nettoast = Toast.makeText(getApplicationContext(), "Connected", Toast.LENGTH_SHORT);
-				nettoast.show();
-			}
 
 
-		}
+	//Return binder to activity that bound to service
+	@Override
+	public IBinder onBind(Intent intent) {
+		return mMessenger.getBinder();
+	}
 
-	
+
 }
