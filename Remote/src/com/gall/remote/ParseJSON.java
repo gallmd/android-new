@@ -7,11 +7,12 @@ import com.gall.remote.DTO.SongFile;
 
 public class ParseJSON {
 
-private String name;
+private int guid;
+private String title;
 private String artist;
 private String album;
-private String trackNumber;
-private String totalTime;
+private int track;
+private int length;
 private SongFile sf;
 
 
@@ -29,18 +30,20 @@ public SongFile parse(String jsonString){
 		JSONObject jsonData = new JSONObject(jsonString);
 		
 		//get data from JSON object
-		name = jsonData.getString("Name");
+		guid = jsonData.getInt("GUID");
+		title = jsonData.getString("Title");
 		artist = jsonData.getString("Artist");
 		album = jsonData.getString("Album");
-		trackNumber = jsonData.getString("Track Number");
-		totalTime = jsonData.getString("Total Time");
+		track = jsonData.getInt("Track");
+		length = jsonData.getInt("Length");
 		
 		sf = new SongFile();
-		sf.setName(name);
+		sf.setGUID(guid);
+		sf.setTitle(title);
 		sf.setArtist(artist);
 		sf.setAlbum(album);
-		sf.setTrackNumber(Integer.parseInt(trackNumber));
-		sf.setTotalTime(Integer.parseInt(totalTime));
+		sf.setTrack(track);
+		sf.setLength(length);
 		
 		
 	} catch (JSONException e) {

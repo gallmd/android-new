@@ -1,6 +1,8 @@
 package com.gall.remote;
 
 public class Constants {
+	
+	private Constants(){}
 
 	//Keys for key-value pairs
 	public class Keys{
@@ -47,12 +49,15 @@ public class Constants {
 
 	public class ServiceMessages{
 		
-		//Messages sent to the background service
-		
 		//Play Controls
 		public static final int PLAY_PRESSED = 1;
 		public static final int NEXT_PRESSED = 2;
 		public static final int PREVIOUS_PRESSED = 3;
+		
+		//Messages sent to the background service
+		public static final int SET_REPLY_MESSENGER = 4;
+		public static final int SONG_SELECTED = 5;
+		public static final int APPLICATION_EXITING = 6;
 	}
 	
 	public class NetworkMessages{

@@ -1,13 +1,14 @@
 package com.gall.remote.fragments;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.concurrent.TimeUnit;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ListFragment;
 import android.os.Bundle;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
 import android.support.v4.app.FragmentActivity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +17,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.gall.remote.Constants;
+import com.gall.remote.MusicChooser;
 import com.gall.remote.R;
 import com.gall.remote.DAO.SongDatabaseDAO;
 import com.gall.remote.DTO.SongFile;
@@ -36,6 +38,7 @@ public class SongsFragment extends ListFragment {
 	private TextView artistText;
 	private String artistFromArgs;
 	private String albumFromArgs;
+	private Messenger mMessenger;
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -51,14 +54,13 @@ public class SongsFragment extends ListFragment {
 			//All songs, used for main list
 
 			allSongs = db.fetchAllSongs();
-			Collections.sort(allSongs, SongFile.sortByName);
 
 		}else if(searchType == Constants.SearchTypes.SONGS_BY_ALBUM){
 			//All Songs on a specific album, list is returned sorted by track number
 
 			artistFromArgs = getArguments().getString(Constants.Keys.ARTIST);
 			albumFromArgs = getArguments().getString(Constants.Keys.ALBUM);
-			
+
 			getActivity().getActionBar().setTitle(albumFromArgs);
 
 
@@ -68,6 +70,13 @@ public class SongsFragment extends ListFragment {
 		}else if(searchType == Constants.SearchTypes.SONGS_BY_ARTIST){
 			//All songs by a specific artist, list is returned sorted by name
 			//TODO add method to fetch songs by artist
+		}
+
+		if(allSongs.size() >= 6 | allSongs == null){
+			//Add blank entry to end of list
+			SongFile blank = new SongFile();
+			blank.setImageID(R.drawable.black_square);
+			allSongs.add(blank);
 		}
 
 
@@ -86,6 +95,7 @@ public class SongsFragment extends ListFragment {
 	public void onAttach(Activity activity) {
 
 		myContext = (FragmentActivity) activity;
+		mMessenger = MusicChooser.getMessenger();
 		super.onAttach(activity);
 	}
 
@@ -94,35 +104,45 @@ public class SongsFragment extends ListFragment {
 	public void onListItemClick(ListView l, View v, int position, long id) {
 
 		super.onListItemClick(l, v, position, id);
-		
-		//TODO send selected file to the intent service to be added to the play queue
-		
-		//Get selected song file
-		SongFile selectedSong = allSongs.get(position);
 
-		//Set Views based on search type
-		if(searchType == Constants.SearchTypes.SONGS_ALL){
+		if(position < allSongs.size()){
 			
-			artistText.setText(getResources().getString(R.string.lbl_artist) + " " + selectedSong.getArtist());
-			songText.setText(getResources().getString(R.string.lbl_song) + " " + selectedSong.getName());
+			//Get selected song file
+			SongFile selectedSong = allSongs.get(position);
+
+			//Set Views based on search type
+			if(searchType == Constants.SearchTypes.SONGS_ALL){
+
+				artistText.setText(getResources().getString(R.string.lbl_artist) + " " + selectedSong.getArtist());
+				songText.setText(getResources().getString(R.string.lbl_song) + " " + selectedSong.getTitle());
+
+			}else if(searchType == Constants.SearchTypes.SONGS_BY_ALBUM){
+
+				artistText.setText(getResources().getString(R.string.lbl_artist) + " " + artistFromArgs);
+				songText.setText(getResources().getString(R.string.lbl_song) + " " + selectedSong.getTitle());
+			}
+
+			int time = selectedSong.getLength();
+			time = Math.abs(time);
 			
-		}else if(searchType == Constants.SearchTypes.SONGS_BY_ALBUM){
+			int seconds = time / 1000000000;
+			int minutes = seconds / 60;
+			seconds = seconds - (minutes * 60);
+			String timeString = (minutes + ":" + seconds);
+
+			totalTimeText.setText(timeString);
+
+			//Create and send message to service that a song was selected
+			Message msg = Message.obtain();
+			msg.what = Constants.ServiceMessages.SONG_SELECTED;
+			msg.obj = selectedSong;
 			
-			artistText.setText(getResources().getString(R.string.lbl_artist) + " " + artistFromArgs);
-			songText.setText(getResources().getString(R.string.lbl_song) + " " + selectedSong.getName());
+			try {
+				mMessenger.send(msg);
+			} catch (RemoteException e) {
+				e.printStackTrace();
+			}
 		}
-
-		int time = selectedSong.getTotalTime();
-		time = Math.abs(time);
-
-		String timeString = String.format("%d:%d",
-				TimeUnit.NANOSECONDS.toMinutes(time),
-				TimeUnit.NANOSECONDS.toSeconds(time)-
-				TimeUnit.MINUTES.toSeconds(TimeUnit.NANOSECONDS.toMinutes(time)));
-		totalTimeText.setText(timeString);
-
-
-
 	}
 
 }

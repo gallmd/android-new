@@ -1,7 +1,12 @@
 package com.gall.remote;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
 
+import android.annotation.SuppressLint;
 import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.content.ComponentName;
@@ -10,6 +15,8 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
@@ -22,7 +29,8 @@ import android.view.ViewConfiguration;
 import android.widget.SlidingDrawer;
 import android.widget.Toast;
 
-import com.gall.remote.network.RemoteService;
+import com.gall.remote.service.NetworkManager;
+import com.gall.remote.service.RemoteService;
 
 /**
  * Main Activity:
@@ -40,14 +48,10 @@ public class MusicChooser extends FragmentActivity{
 	private Intent mServiceIntent;
 	private SlidingDrawer drawer;
 	
-	private Messenger mService;
+	private static Messenger mService;
 	private boolean mBound;
 
-	/**
-	 * **********************************************************************************************
-	 * LifeCycle Management
-	 * **********************************************************************************************
-	 */
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		//Initialization
@@ -79,15 +83,36 @@ public class MusicChooser extends FragmentActivity{
 		SharedPreferences sharedPrefs = getPreferences(MODE_PRIVATE);
 		String defaultIP = getResources().getString(R.string.default_ip_address);
 		String prefIP = sharedPrefs.getString("pref_ip_address", defaultIP);
-		Toast.makeText(getApplicationContext(), prefIP, Toast.LENGTH_SHORT).show();
+		
+		String defaultPort = getResources().getString(R.string.default_port_number);
+		String prefPort = sharedPrefs.getString("pref_port_number", defaultPort);
 
 		//Start Network Service
 		mServiceIntent = new Intent(getApplicationContext(), RemoteService.class);
-		mServiceIntent.putExtra(Constants.Keys.IP_ADDRESS, getResources().getString(R.string.default_ip_address));
-		mServiceIntent.putExtra(Constants.Keys.PORT, getResources().getString(R.string.default_port_number));
+		mServiceIntent.putExtra(Constants.Keys.IP_ADDRESS, prefIP);
+		mServiceIntent.putExtra(Constants.Keys.PORT, prefPort);
 		startService(mServiceIntent);
 		
 		bindService(mServiceIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
+	}
+	
+	@Override
+	protected void onDestroy() {
+		Message msg = Message.obtain(null,Constants.ServiceMessages.APPLICATION_EXITING, 0, 0);
+		try {
+			
+			mService.send(msg);
+			unbindService(mServiceConnection);
+			Thread.sleep(500);
+
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		super.onDestroy();
 	}
 
 
@@ -98,13 +123,6 @@ public class MusicChooser extends FragmentActivity{
 
 		return true;
 	}
-
-	/**
-	 * **********************************************************************************************
-	 * End LifeCycle Management
-	 * **********************************************************************************************
-	 */
-
 
 
 	//Handle button presses
@@ -129,6 +147,7 @@ public class MusicChooser extends FragmentActivity{
 
 		}
 		
+		//Send message to service
 		Message msg = Message.obtain(null,msgContent, 0, 0);
 		try {
 			mService.send(msg);
@@ -137,12 +156,18 @@ public class MusicChooser extends FragmentActivity{
 		}
 
 	}
+	
+	//Static method that can be called by fragments to obtain the mService Messenger
+	public static Messenger getMessenger(){
+		return mService;
+	}
 
 	@Override
 	public void onBackPressed(){
 
 		android.app.FragmentManager fm = getFragmentManager();
-
+		
+		//TODO Questionable navigation technique, try to do it without overriding system behavior
 		if(!drawer.isOpened()){
 			//Only pop back stack if drawer is closed
 			int backStackCount = fm.getBackStackEntryCount();
@@ -173,10 +198,53 @@ public class MusicChooser extends FragmentActivity{
 	public boolean onMenuItemSelected(int featureId, MenuItem item) {
 
 		switch(item.getItemId()){
-
+		
+		//Launch settings menu
 		case R.id.action_settings:
-			Intent settingsIntent = new Intent(this, UserPreferencesActivity.class);
-			startActivity(settingsIntent);
+//			Intent settingsIntent = new Intent(this, UserPreferencesActivity.class);
+//			startActivity(settingsIntent);
+			File f=new File("/data/data/com.gall.remote/databases/remotesongdatabase.db");
+			FileInputStream fis=null;
+			FileOutputStream fos=null;
+
+			try
+			{
+			  fis=new FileInputStream(f);
+			  File root = Environment.getExternalStorageDirectory();
+			  
+			  File dir = new File(root.getAbsolutePath() + "/database");
+			  dir.mkdirs();
+			  
+			  File newFile = new File(dir, "database_dump.db");
+			  
+			  
+			  fos=new FileOutputStream(newFile);
+			  while(true)
+			  {
+			    int i=fis.read();
+			    if(i!=-1)
+			    {fos.write(i);}
+			    else
+			    {break;}
+			  }
+			  fos.flush();
+			  Toast.makeText(this, "DB dump OK", Toast.LENGTH_LONG).show();
+			}
+			catch(Exception e)
+			{
+			  e.printStackTrace();
+			  Toast.makeText(this, "DB dump ERROR", Toast.LENGTH_LONG).show();
+			}
+			finally
+			{
+			  try
+			  {
+			    fos.close();
+			    fis.close();
+			  }
+			  catch(IOException ioe)
+			  {}
+			}
 			break;
 		}
 
@@ -192,6 +260,17 @@ public class MusicChooser extends FragmentActivity{
 
 			mService = new Messenger(service);
 			mBound = true;
+			
+			//Provide Service with Handler to respond back to
+			Message replyMessage = Message.obtain();
+			replyMessage.replyTo = fromServiceMessenger;
+			replyMessage.what = Constants.ServiceMessages.SET_REPLY_MESSENGER;
+			
+			try {
+				mService.send(replyMessage);
+			} catch (RemoteException e) {
+				e.printStackTrace();
+			}
 		}
 
 		@Override
@@ -202,5 +281,44 @@ public class MusicChooser extends FragmentActivity{
 		}
 		
 	};
+	
+	//Create messenger to send to service
+	Messenger fromServiceMessenger = new Messenger(new FromServiceHandler());
+	
+	//Create Handler for messages from service
+	@SuppressLint("HandlerLeak")
+	class FromServiceHandler extends Handler{
+		
+		@Override
+		public void handleMessage(Message msg) {
+			
+			switch(msg.what){
+			
+			case NetworkManager.CONNECTED:
+				Toast.makeText(getApplicationContext(), "Connected", Toast.LENGTH_SHORT).show();
+				break;
+				
+			case NetworkManager.CONNECTION_LOST:
+				Toast.makeText(getApplicationContext(), "Lost Connection", Toast.LENGTH_SHORT).show();
+				break;
+				
+			case NetworkManager.LIBRARY_DELETED:
+				//TODO add prompt to confirm library deletion, or initiate command on the client side
+				Toast.makeText(getApplicationContext(), "Library Deleted!", Toast.LENGTH_SHORT).show();
+				break;
+				
+			case NetworkManager.LIBRARY_UPDATE_IN_PROGRESS:
+				Toast.makeText(getApplicationContext(), "Library Update In Progress", Toast.LENGTH_SHORT).show();
+				break;
+				
+			case NetworkManager.LIBRARY_UPDATE_COMPLETED:
+				Toast.makeText(getApplicationContext(), "Library Update Completed", Toast.LENGTH_SHORT).show();
+				break;
+				
+			}
+			super.handleMessage(msg);
+		}
+		
+	}
 
 }

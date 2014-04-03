@@ -1,4 +1,4 @@
-package com.gall.remote.network;
+package com.gall.remote.service;
 
 import java.io.IOException;
 import java.net.InetAddress;

@@ -1,13 +1,16 @@
-package com.gall.remote.network;
+package com.gall.remote.service;
 
+import java.lang.reflect.Array;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import android.annotation.SuppressLint;
-import android.os.Handler;
+import android.content.Context;
 import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
 
 public class NetworkManager {
 
@@ -17,6 +20,11 @@ public class NetworkManager {
 	public static final int CONNECTED = 1;
 	public static final int CONNECTION_LOST = 2;
 	public static final int NO_WIFI = 3;
+	
+	//Command flags
+	public static final int LIBRARY_UPDATE_IN_PROGRESS = 4;
+	public static final int LIBRARY_UPDATE_COMPLETED = 5;
+	public static final int LIBRARY_DELETED = 6;
 
 	//Constants
 
@@ -28,9 +36,10 @@ public class NetworkManager {
 
 	private static final int MAX_POOL_SIZE = 8;
 
+	@SuppressWarnings("unused")
 	private static int NUMBER_OF_CORES = Runtime.getRuntime().availableProcessors();
 
-	//Queue containing network runnables to be executed
+	//Queue containing network Runnables to be executed
 	private final BlockingQueue<Runnable> mNetworkWorkQueue;
 
 	//Queue containing ReceiveRunnabls
@@ -46,11 +55,17 @@ public class NetworkManager {
 	//Thread pool for receive tasks
 	private final ThreadPoolExecutor mNetworkReceiveThreadPool;
 
-	private static  Handler mHandler;
-
+	//Single Instance of NetworkManager
 	private static NetworkManager sInstance = null;
+	
+	//Messenger to send data back to the UI.
+	private static Messenger toUIMessenger;
+	
+	//Application Context that will be passed to classes that write to database.
+	private static Context mContext;
 
 	static{
+		
 		KEEP_ALIVE_TIME_UNIT = TimeUnit.SECONDS;
 
 		sInstance = new NetworkManager();
@@ -74,26 +89,9 @@ public class NetworkManager {
 		//Thread pool that contains ReceiveRunnables
 		mNetworkReceiveThreadPool = new ThreadPoolExecutor(CORE_POOL_SIZE, MAX_POOL_SIZE, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT, mNetworkReceiveQueue);
 
-		mHandler = new Handler(){
-			@Override
-			public void handleMessage(Message msg) {
-
-				//Handle messages from server that will need to be displayed on the UI
-				switch(msg.what){
-				case NetworkManager.CONNECTED:
-					//						Toast.makeText(getApplicationContext(), "Connected", Toast.LENGTH_SHORT).show();
-					break;
-				case NetworkManager.CONNECTION_ERROR:
-					//						Toast.makeText(getApplicationContext(), "Connection Error", Toast.LENGTH_SHORT).show();
-					break;
-				case NetworkManager.CONNECTION_LOST:
-					//						Toast.makeText(getApplicationContext(), "Connection Lost", Toast.LENGTH_SHORT).show();
-					break;
-				}
-			}
-
-		};
 	}//end Constructor
+	
+
 
 	//Will be the only way to get an instance of the Network Manager
 	public static NetworkManager getInstance(){
@@ -101,26 +99,25 @@ public class NetworkManager {
 	}
 
 	//Handle Changes in Connection State
+	//State changes will be received from instances of NetworkTask
 	public void handleState(NetworkTask networkTask, int state){
-		Message msg = mHandler.obtainMessage();
+		
+		Message toUI = Message.obtain();
 
 		switch(state){
 		case CONNECTION_ERROR:
 			//handle connection errors
-			msg.what = NetworkManager.CONNECTION_ERROR;
-			mHandler.dispatchMessage(msg);
+			toUI.what = NetworkManager.CONNECTION_ERROR;
 			break;
 
 		case CONNECTED:
 			mNetworkReceiveThreadPool.execute(networkTask.getReceiveRunnable());
-			msg.what = NetworkManager.CONNECTED;
-			mHandler.dispatchMessage(msg);
+			toUI.what = NetworkManager.CONNECTED;
 			break;
 
 		case CONNECTION_LOST:
 			//Handle a lost connection
-			msg.what = NetworkManager.CONNECTION_LOST;
-			mHandler.dispatchMessage(msg);
+			toUI.what = NetworkManager.CONNECTION_LOST;
 			break;
 
 		case NO_WIFI:
@@ -130,7 +127,26 @@ public class NetworkManager {
 		case NOT_CONNECTED:
 			//Connect for first time, possibly not needed
 			break;
+			
+		case LIBRARY_DELETED:
+			toUI.what = NetworkManager.LIBRARY_DELETED;
+			break;
+			
+		case LIBRARY_UPDATE_COMPLETED:
+			toUI.what = NetworkManager.LIBRARY_UPDATE_COMPLETED;
+			break;
+			
+		case LIBRARY_UPDATE_IN_PROGRESS:
+			toUI.what = NetworkManager.LIBRARY_UPDATE_IN_PROGRESS;
+			break;
 		}
+		
+		try {
+			toUIMessenger.send(toUI);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+
 
 	}
 
@@ -145,12 +161,43 @@ public class NetworkManager {
 		}
 
 		//Sends IP address and port number to NetworkTask
-		connectTask.initializeConnectTask(ip, port);
+		connectTask.initializeConnectTask(ip, port, mContext);
 
 		sInstance.mNetworkConnectThreadPool.execute(connectTask.getConnectRunnable());
+		
+		//Add Network Task to Queue
+		sInstance.mNetworkTaskQueue.add(connectTask);
 
 		return connectTask;
 
+	}
+	
+	
+	//Retrieves the current NetworkTask and calls its sendMessage method
+	public static void sendMessageToServer(String message){
+		
+		NetworkTask sendTask = sInstance.mNetworkTaskQueue.peek();
+		
+		if(sendTask != null){
+			sendTask.sendMessage(message);
+		}
+		
+	}
+	
+	//Called by RemoteService to pass necessary data
+	public static void initializeNetworkManager(Messenger messenger, Context context){
+		toUIMessenger = messenger;
+		mContext = context;
+	}
+	
+	public void disconnectFromAll(){
+		
+		NetworkTask[] tasks = new NetworkTask[mNetworkTaskQueue.size()];
+		sInstance.mNetworkTaskQueue.toArray(tasks);
+		
+		for (NetworkTask networkTask : tasks) {
+			networkTask.closeConnection();
+		}
 	}
 
 }

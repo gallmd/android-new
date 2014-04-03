@@ -1,4 +1,4 @@
-package com.gall.remote.network;
+package com.gall.remote.service;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -35,12 +35,17 @@ public class ReceiveRunnable implements Runnable{
 	public static final int DISCONNECTED_FROM_SERVER = 0;
 	public static final int CONNECTION_LOST = 1;
 	public static final int SOCKET_READ_ERROR = 2;
+	public static final int LIBRARY_DELETED = 3;
+	public static final int LIBRARY_UPDATE_IN_PROGRESS = 4;
+	public static final int LIBRARY_UPDATE_COMPLETED = 5;
 	
 	interface TaskRunnableReceiveMethods{
 		
 		Socket getConnectionSocket();
 		
 		void handleReceiveState(int state);
+		
+		Context getContext();
 	}
 	
 	public ReceiveRunnable(TaskRunnableReceiveMethods mNetworkTask) {
@@ -53,6 +58,17 @@ public class ReceiveRunnable implements Runnable{
 		android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
 		
 		clientSocket = mNetworkTask.getConnectionSocket();
+		
+		try {
+			input = new DataInputStream(clientSocket.getInputStream());
+			output = new DataOutputStream(clientSocket.getOutputStream());
+			mContextConnect = mNetworkTask.getContext();
+		} catch (IOException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+		
+		
 		//infinite loop
 		while(clientSocket.isConnected()){
 
@@ -60,9 +76,6 @@ public class ReceiveRunnable implements Runnable{
 			//receive  message
 			try {
 				
-				input = new DataInputStream(clientSocket.getInputStream());
-				output = new DataOutputStream(clientSocket.getOutputStream());
-
 				message = input.readLine();
 				
 				//handle message
@@ -76,13 +89,23 @@ public class ReceiveRunnable implements Runnable{
 						bInCommand = true;
 						parse = new ParseJSON();
 						db = new SongDatabaseDAO(mContextConnect);
+						mNetworkTask.handleReceiveState(LIBRARY_UPDATE_IN_PROGRESS);
 					}
 
 					if(message.equalsIgnoreCase("delete library")){
+						
 						db = new SongDatabaseDAO(mContextConnect);
+						
 						db.dropTable();
+						mNetworkTask.handleReceiveState(LIBRARY_DELETED);
+						
 					}
 
+					if(message.equals("DISCONNECT")){
+						
+						break;
+						
+					}
 					//Add new commands here
 
 				}else if (bInCommand){
@@ -95,6 +118,9 @@ public class ReceiveRunnable implements Runnable{
 
 							bUpdateFlag = false;
 							bInCommand = false;
+							db.close();
+							db = null;
+							mNetworkTask.handleReceiveState(LIBRARY_UPDATE_COMPLETED);
 
 						}else{
 
@@ -116,11 +142,15 @@ public class ReceiveRunnable implements Runnable{
 					//Add new commands here
 				}
 				
+				//Exiting the while loop means that we disconnected from the server
+				clientSocket.close();
 				mNetworkTask.handleReceiveState(DISCONNECTED_FROM_SERVER);
+				input.close();
 
 			} catch (SocketException e) {
 				mNetworkTask.handleReceiveState(CONNECTION_LOST);
 				e.printStackTrace();
+				
 
 			} catch (IOException e1) {
 				mNetworkTask.handleReceiveState(SOCKET_READ_ERROR);

@@ -35,18 +35,25 @@ public class AlbumsFragment extends ListFragment {
 
 		//Determine which albums to display
 		if(searchType == Constants.SearchTypes.ALBUMS_ALL){
-			
+
 			//Display All Albums
 			allAlbums = albumsDB.fetchAllAlbums();
-			
+
 		}else if(searchType == Constants.SearchTypes.ALBUMS_BY_ARTIST){
-			
+
 			//Add Albums from a specific artist
 			String artist = getArguments().getString(Constants.Keys.ARTIST);
 			allAlbums = albumsDB.fetchAlbumsByArtist(artist);
 			getActivity().getActionBar().setTitle(artist);
-			
+
 		}//end if
+
+		if(allAlbums.size() >= 6 | allAlbums == null){
+			//Add blank entry to end of list
+			SongFile blank = new SongFile();
+			blank.setImageID(R.drawable.black_square);
+			allAlbums.add(blank);
+		}
 
 		//setup ListAdapter
 		AlbumFragmentAdapter artistAdapter = new AlbumFragmentAdapter(inflater.getContext(), R.layout.row_layout, allAlbums);
@@ -54,31 +61,32 @@ public class AlbumsFragment extends ListFragment {
 
 		return rootView;
 	}
-	
+
 	@Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
 
 		super.onListItemClick(l, v, position, id);
-		
-		//Create new Songs Fragment and add arguments based on what album was selected
-		SongsFragment songsFragment = new SongsFragment();
-		Bundle bundle = new Bundle();
-		String album = allAlbums.get(position).getAlbum();
-		String artist = allAlbums.get(position).getArtist();
-		
-		//populate bundle and set arguments
-		bundle.putString(Constants.Keys.SEARCH_TYPE, Constants.SearchTypes.SONGS_BY_ALBUM);
-		bundle.putString(Constants.Keys.ALBUM, album);
-		bundle.putString(Constants.Keys.ARTIST, artist);
-		songsFragment.setArguments(bundle);
-		
-		//Create fragment transaction and replace with new songs fragment
-		FragmentTransaction trans = getActivity().getFragmentManager().beginTransaction();
-		trans.addToBackStack(album);
-		trans.remove(this);
-		trans.add(R.id.fragmentContainer,  songsFragment);
 
-		trans.commit();
+		if(position < allAlbums.size()){
+			//Create new Songs Fragment and add arguments based on what album was selected
+			SongsFragment songsFragment = new SongsFragment();
+			Bundle bundle = new Bundle();
+			String album = allAlbums.get(position).getAlbum();
+			String artist = allAlbums.get(position).getArtist();
 
+			//populate bundle and set arguments
+			bundle.putString(Constants.Keys.SEARCH_TYPE, Constants.SearchTypes.SONGS_BY_ALBUM);
+			bundle.putString(Constants.Keys.ALBUM, album);
+			bundle.putString(Constants.Keys.ARTIST, artist);
+			songsFragment.setArguments(bundle);
+
+			//Create fragment transaction and replace with new songs fragment
+			FragmentTransaction trans = getActivity().getFragmentManager().beginTransaction();
+			trans.addToBackStack(album);
+			trans.remove(this);
+			trans.add(R.id.fragmentContainer,  songsFragment);
+
+			trans.commit();
+		}
 	}
 }

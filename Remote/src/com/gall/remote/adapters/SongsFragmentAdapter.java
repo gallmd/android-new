@@ -62,7 +62,7 @@ public class SongsFragmentAdapter extends ArrayAdapter<SongFile> {
 
 		}
 
-		holder.titleTxt.setText(sf.getName());
+		holder.titleTxt.setText(sf.getTitle());
 		holder.imageView.setImageResource(sf.getImageID());
 
 

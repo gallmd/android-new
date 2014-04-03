@@ -1,9 +1,13 @@
-package com.gall.remote.network;
+package com.gall.remote.service;
 
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 
-import com.gall.remote.network.ConnectRunnable.TaskRunnableConnectMethods;
-import com.gall.remote.network.ReceiveRunnable.TaskRunnableReceiveMethods;
+import android.content.Context;
+
+import com.gall.remote.service.ConnectRunnable.TaskRunnableConnectMethods;
+import com.gall.remote.service.ReceiveRunnable.TaskRunnableReceiveMethods;
 
 /*
  * This class manages the state of connections
@@ -18,6 +22,8 @@ public class NetworkTask implements TaskRunnableReceiveMethods, TaskRunnableConn
 	@SuppressWarnings("unused")
 	private Thread mCurrentThread;
 	private Socket connectionSocket;
+	private DataOutputStream output;
+	private Context mContext;
 
 	NetworkTask(){
 		mConnectRunnable = new ConnectRunnable(this);
@@ -25,11 +31,12 @@ public class NetworkTask implements TaskRunnableReceiveMethods, TaskRunnableConn
 		mNetworkManager = NetworkManager.getInstance();
 	}
 	
-	public void initializeConnectTask(String ip, String port){
+	public void initializeConnectTask(String ip, String port, Context context){
 		
 		//Set IP address and port number to connect to
 		this.ip = ip;
 		this.port = port;
+		this.mContext = context;
 		
 	}
 
@@ -67,8 +74,10 @@ public class NetworkTask implements TaskRunnableReceiveMethods, TaskRunnableConn
 	public String getPort() {
 		return this.port;
 	}
+	
 
-	//Handle state reported by connect runnable
+	//Called by connect runnable, changes in state are passed to 
+	//the NetworkManager to be handled.	
 	@Override
 	public void handleConnectState(int state) {
 		
@@ -89,6 +98,7 @@ public class NetworkTask implements TaskRunnableReceiveMethods, TaskRunnableConn
 		}
 	}
 	
+
 	@Override
 	public void handleReceiveState(int state) {
 		int outstate;
@@ -108,6 +118,22 @@ public class NetworkTask implements TaskRunnableReceiveMethods, TaskRunnableConn
 			outstate = NetworkManager.CONNECTION_LOST;
 			handleState(outstate);
 			break;
+			
+		case ReceiveRunnable.LIBRARY_DELETED:
+			outstate = NetworkManager.LIBRARY_DELETED;
+			handleState(outstate);
+			break;
+			
+		case ReceiveRunnable.LIBRARY_UPDATE_IN_PROGRESS:
+			outstate = NetworkManager.LIBRARY_UPDATE_IN_PROGRESS;
+			handleState(outstate);
+			break;
+			
+		case ReceiveRunnable.LIBRARY_UPDATE_COMPLETED:
+			outstate = NetworkManager.LIBRARY_UPDATE_COMPLETED;
+			handleState(outstate);
+			sendMessage("Library Update Complete");
+			break;
 		}
 		
 	}
@@ -117,16 +143,60 @@ public class NetworkTask implements TaskRunnableReceiveMethods, TaskRunnableConn
 		mNetworkManager.handleState(this, outstate);
 	}
 	
-	//Sets Connection Socket From ConnectRunnable
+	//Sets Connection Socket From ConnectRunnable and set DataStream to write to
 	@Override
 	public void setConnectionSocket(Socket connectedSocket) {
+		//Set connection socket to the socket that was created
+		//in the ConnectRunnable.
 		this.connectionSocket = connectedSocket;
+		
+		try {
+			
+			output = new DataOutputStream(connectionSocket.getOutputStream());
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 	}
 	
-	//Gets Connection Socket From Receive Runnable
+	//Called to pass the connection socket to the ReceiveRunnable
 	@Override
 	public Socket getConnectionSocket(){
 		return this.connectionSocket;
+	}
+	
+	//Send simple message over socket, small messages shouldn't need
+	//to be sent on a separate thread.
+	public void sendMessage(String message){
+		
+		if (connectionSocket.isConnected()){
+			
+			try {
+				
+				message = (message + "\n");
+				output.writeBytes(message);
+				
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	@Override
+	public Context getContext() {
+		return mContext;
+	}
+	
+	public void closeConnection(){
+		sendMessage("DISCONNECT");
+		try {
+			output.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 
