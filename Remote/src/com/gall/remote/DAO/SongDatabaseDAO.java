@@ -23,9 +23,10 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 	private static final String _ID = "_ID";
 	private static final String SONGS = "SONGS";
 	private static final String GUID = "GUID";
+	@SuppressWarnings("unused")
 	private static final String columns = GUID + " , " + TITLE + " , " + ARTIST + " , " + ALBUM + " , " + LENGTH + " , " + TRACK;
-	private static final String schemaCheckExists = "CREATE TABLE IF NOT EXISTS " + SONGS + " ( " + _ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +  TITLE + " TEXT, " + ARTIST + " TEXT, " + ALBUM + " TEXT, " + LENGTH + " INTEGER, " + TRACK + " INTEGER);";
-	private static final String schema = "CREATE TABLE " + SONGS + " ( " + _ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " + TITLE + " TEXT, " + ARTIST + " TEXT, " + ALBUM + " TEXT, " + LENGTH + " INTEGER, " + TRACK + " INTEGER);";
+	private static final String schemaCheckExists = "CREATE TABLE IF NOT EXISTS " + SONGS + " ( " + _ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " + GUID + " INTEGER , " +  TITLE + " TEXT, " + ARTIST + " TEXT, " + ALBUM + " TEXT, " + LENGTH + " TEXT, " + TRACK + " INTEGER);";
+	private static final String schema = "CREATE TABLE " + SONGS + " ( " + _ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " + GUID + " INTEGER, " + TITLE + " TEXT, " + ARTIST + " TEXT, " + ALBUM + " TEXT, " + LENGTH + " TEXT, " + TRACK + " INTEGER);";
 
 	public SongDatabaseDAO(Context context) {
 		super(context, "remotesongdatabase.db", null, 1);
@@ -38,7 +39,7 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 //		getReadableDatabase().execSQL(schemaCheckExists);
 
 		ContentValues cv = new ContentValues();
-//		cv.put(GUID, songFile.getGUID());
+		cv.put(GUID, songFile.getGUID());
 		cv.put(ALBUM, songFile.getAlbum());
 		cv.put(ARTIST, songFile.getArtist());
 		cv.put(TITLE, songFile.getTitle());
@@ -54,7 +55,6 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-		//		String schema = "CREATE TABLE " + SONGS + " ( " + _ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " + GUID + "INTEGER" +  TITLE + " TEXT, " + ARTIST + " TEXT, " + ALBUM + " TEXT, " + LENGTH + " INTEGER, " + TRACK + " INTEGER);";
 		db.execSQL(schema);
 	}
 
@@ -80,7 +80,7 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 		ArrayList<SongFile> allSongs = new ArrayList<SongFile>();
 
 		getReadableDatabase().execSQL(schemaCheckExists);
-		String sqlQuery = "SELECT " + columns + " FROM " + SONGS + " WHERE " + TITLE + " LIKE '%" + songName + "%'";
+		String sqlQuery = "SELECT * FROM " + SONGS + " WHERE " + TITLE + " LIKE '%" + songName + "%'";
 		Cursor cursor = getReadableDatabase().rawQuery(sqlQuery, null);
 
 		if(cursor.getCount() > 0){
@@ -92,7 +92,7 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 				sf.setTitle(cursor.getString(0));
 				sf.setArtist(cursor.getString(1));
 				sf.setAlbum(cursor.getString(2));
-				sf.setLength(cursor.getInt(3));
+				sf.setLength(cursor.getString(3));
 				sf.setTrack(cursor.getInt(4));
 				sf.setImageID(R.drawable.ic_song);
 
@@ -115,7 +115,7 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 		album = album.replace("'", "''");
 
 		getReadableDatabase().execSQL(schemaCheckExists);
-		String[] queryColumns = {TITLE, LENGTH, TRACK};
+		String[] queryColumns = {GUID, TITLE, LENGTH, TRACK};
 		String query = SQLiteQueryBuilder.buildQueryString(false, SONGS, queryColumns, ALBUM + "='" + album +"' AND " + ARTIST + "='" + artist + "'", null, null, TRACK +" ASC", null);
 		Cursor cursor = getReadableDatabase().rawQuery(query, null);
 
@@ -126,11 +126,12 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 			while(!cursor.isAfterLast()){
 
 				SongFile sf = new SongFile();
-				sf.setTitle(cursor.getString(0));
+				sf.setGUID(cursor.getInt(0));
+				sf.setTitle(cursor.getString(1));
 				sf.setArtist(artist);
 				sf.setAlbum(album);
-				sf.setLength(cursor.getInt(1));
-				sf.setTrack(cursor.getInt(2));
+				sf.setLength(cursor.getString(2));
+				sf.setTrack(cursor.getInt(3));
 				sf.setImageID(R.drawable.ic_song);
 
 				songsByAlbum.add(sf);
@@ -149,7 +150,7 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 		ArrayList<SongFile> allSongs = new ArrayList<SongFile>();
 
 		getReadableDatabase().execSQL(schemaCheckExists);
-		String[] queryColumns = {TITLE, ARTIST, ALBUM, LENGTH, TRACK};
+		String[] queryColumns = {GUID, TITLE, ARTIST, ALBUM, LENGTH, TRACK};
 		String query = SQLiteQueryBuilder.buildQueryString(true, SONGS, queryColumns, null, null, null, TITLE +" ASC", null);
 		Cursor cursor = getReadableDatabase().rawQuery(query, null);
 
@@ -160,11 +161,12 @@ public class SongDatabaseDAO extends SQLiteOpenHelper {
 			while(!cursor.isAfterLast()){
 
 				SongFile sf = new SongFile();
-				sf.setTitle(cursor.getString(0));
-				sf.setArtist(cursor.getString(1));
-				sf.setAlbum(cursor.getString(2));
-				sf.setLength(cursor.getInt(3));
-				sf.setTrack(cursor.getInt(4));
+				sf.setGUID(cursor.getInt(0));
+				sf.setTitle(cursor.getString(1));
+				sf.setArtist(cursor.getString(2));
+				sf.setAlbum(cursor.getString(3));
+				sf.setLength(cursor.getString(4));
+				sf.setTrack(cursor.getInt(5));
 				sf.setImageID(R.drawable.ic_song);
 				allSongs.add(sf);
 

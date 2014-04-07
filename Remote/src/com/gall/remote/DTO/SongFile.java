@@ -17,7 +17,7 @@ public class SongFile {
 	private String genre;
 	private String comment;
 	private String compilation;
-	private int length;
+	private String length;
 	private int bitRate;
 	private int sampleRate;
 	private int directory;
@@ -333,7 +333,7 @@ public class SongFile {
 	 * Returns length of the SongFile in nano seconds.
 	 * column 'length' in the database.
 	 */
-	public int getLength() {
+	public String getLength() {
 		return length;
 	}
 
@@ -343,7 +343,7 @@ public class SongFile {
 	 * Returns length of the SongFile in nano seconds.
 	 * column 'length' in the database.
 	 */
-	public void setLength(int length) {
+	public void setLength(String length) {
 		this.length = length;
 	}
 
@@ -790,73 +790,10 @@ public class SongFile {
 		
 		
 
-		sb.append("\"}\n");
+		sb.append("\"}");
 
 		return sb.toString();
 
 	}
-
-//	//comparators
-//	@Override
-//	public int compareTo(SongFile compareSong) {
-//
-//		return 0;
-//		
-//	}
-//	//Sort by name Comparator
-//	public static Comparator<SongFile> sortByName = new Comparator<SongFile>(){
-//
-//		@Override
-//		public int compare(SongFile song1, SongFile song2) {
-//
-//			String songName1 = song1.getName().toUpperCase(Locale.US);
-//			String songName2 = song2.getName().toUpperCase(Locale.US);
-//
-//			return songName1.compareTo(songName2);
-//		}
-//
-//	};
-//
-//	//Sort by name Comparator
-//	public static Comparator<SongFile> sortByArtist = new Comparator<SongFile>(){
-//
-//		@Override
-//		public int compare(SongFile song1, SongFile song2) {
-//
-//			String songName1 = song1.getArtist().toUpperCase(Locale.US);
-//			String songName2 = song2.getArtist().toUpperCase(Locale.US);
-//
-//			return songName1.compareTo(songName2);
-//		}
-//
-//	};
-//
-//	//Sort by name Comparator
-//	public static Comparator<SongFile> sortByAlbum = new Comparator<SongFile>(){
-//
-//		@Override
-//		public int compare(SongFile song1, SongFile song2) {
-//
-//			String songName1 = song1.getAlbum().toUpperCase(Locale.US);
-//			String songName2 = song2.getAlbum().toUpperCase(Locale.US);
-//
-//			return songName1.compareTo(songName2);
-//		}
-//
-//	};
-//
-//	//Sort by Track Number Comparator
-//	public static Comparator<SongFile> sortByTrackNumber = new Comparator<SongFile>(){
-//
-//		@Override
-//		public int compare(SongFile song1, SongFile song2) {
-//
-//			int trackNumber1 = song1.getTrackNumber();
-//			int trackNumber2 = song2.getTrackNumber();
-//
-//			return trackNumber1 - trackNumber2;
-//		}
-//
-//	};
 
 }

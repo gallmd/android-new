@@ -98,11 +98,12 @@ public class MusicChooser extends FragmentActivity{
 	
 	@Override
 	protected void onDestroy() {
+		//Send message to service that application is begin destroyed and that it should start clean-up.
 		Message msg = Message.obtain(null,Constants.ServiceMessages.APPLICATION_EXITING, 0, 0);
 		try {
 			
 			mService.send(msg);
-			unbindService(mServiceConnection);
+//			unbindService(mServiceConnection);
 			Thread.sleep(500);
 
 		} catch (RemoteException e) {
@@ -194,6 +195,7 @@ public class MusicChooser extends FragmentActivity{
 
 
 	//handle menu presses
+	@SuppressLint("SdCardPath")
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem item) {
 
@@ -203,6 +205,8 @@ public class MusicChooser extends FragmentActivity{
 		case R.id.action_settings:
 //			Intent settingsIntent = new Intent(this, UserPreferencesActivity.class);
 //			startActivity(settingsIntent);
+			
+			//Dumps database to sd card so it can be copied to a computer and viewed.
 			File f=new File("/data/data/com.gall.remote/databases/remotesongdatabase.db");
 			FileInputStream fis=null;
 			FileOutputStream fos=null;

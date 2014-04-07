@@ -12,8 +12,8 @@ import java.net.UnknownHostException;
 public class ConnectRunnable implements Runnable {
 
 	//State Flags
-	public static final int CONNECT_STATE_CONNECTED = 1;
-	public static final int CONNECT_STATE_FAILED = 0;
+	public static final int CONNECT_STATE_CONNECTED = 201;
+	public static final int CONNECT_STATE_FAILED = 200;
 
 	private String ipAddress;
 	private String portString;

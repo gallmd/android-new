@@ -6,11 +6,14 @@ import java.net.Socket;
 
 import android.content.Context;
 
+import com.gall.remote.DTO.NetworkCommand;
 import com.gall.remote.service.ConnectRunnable.TaskRunnableConnectMethods;
 import com.gall.remote.service.ReceiveRunnable.TaskRunnableReceiveMethods;
 
-/*
- * This class manages the state of connections
+/**
+ * This class manages the state of a single connection and the
+ * thread it runs on.  It also has the ability to send a message
+ * to the server.
  */
 public class NetworkTask implements TaskRunnableReceiveMethods, TaskRunnableConnectMethods {
 	
@@ -31,6 +34,15 @@ public class NetworkTask implements TaskRunnableReceiveMethods, TaskRunnableConn
 		mNetworkManager = NetworkManager.getInstance();
 	}
 	
+	/**
+	 * Called when a connection is going to be made.  This
+	 * method sets the IP address, and the port number to connect to.
+	 * It also sets a reference to the application context to access the 
+	 * application's database.
+	 * @param ip - The IP Address of the server to connect to.
+	 * @param port - The port number that the server is listening on.
+	 * @param context - Application context used to access the database.
+	 */
 	public void initializeConnectTask(String ip, String port, Context context){
 		
 		//Set IP address and port number to connect to
@@ -41,48 +53,79 @@ public class NetworkTask implements TaskRunnableReceiveMethods, TaskRunnableConn
 	}
 
 	
-	//Set thread that runnable is currently running on
+	/**
+	 * Called from the RecieveRunnable that this instance of NetworkTask is managing.
+	 * The ReceiveRunnable sets this field to the thread that it is currently
+	 * running on.
+	 * @param thread - The current thread for the ReceiveRunnable.
+	 */
 	public void setCurrentThread(Thread thread){
 		synchronized (mNetworkManager) {
 			mCurrentThread = thread;
 		}
 	}
 	
+	/**
+	 * Called by the NetworkManager to obtain a reference to the ConnectRunnable
+	 * that belongs to this NetworkTask. The NetworkManager will start the Runnable.
+	 * @return The ConnectRunnable associated with this instance of NetworkTask.
+	 */
 	public Runnable getConnectRunnable(){
 		return mConnectRunnable;
 	}
 	
+	/**
+	 * Called by the NetworkManager to obtain a reference to the ReceiveRunnable
+	 * that belongs to this NetworkTask. The NetworkManager will start the Runnable.
+	 * @return The ReceiveRunnable associated with this instance of NetworkTask.
+	 */
 	public Runnable getReceiveRunnable(){
 		return mReceiveRunnable;
 	}
 	
-	//Implements ConnectRunnable.setConnectThread calls setCurrentThread
+	
+	/**
+	 * Called from the ConnectRunnable that this instance of NetworkTask is managing.
+	 * The ConnectRunnable sets this field to the thread that it is currently
+	 * running on.
+	 * @param thread - The current thread for the ConnectRunnable.
+	 */
 	@Override
 	public void setConnectThread(Thread currentThread) {
 		setCurrentThread(currentThread);
 		
 	}
 	
-	//Allows connect runnable to retrieve IP address
+	/**
+	 * Called from the ConnectRunnable to retrieve the IP
+	 * Address to connect to.
+	 * @return ip - IP address to connect to.
+	 */
 	@Override
 	public String getIP() {
 		return this.ip;
 	}
 
-	//Allows connect runnable to retrieve port
+	/**
+	 * Called from the ConnectRunnable to retrieve the Port
+	 * Number that the server is listening on.
+	 * @return port - The port number that the server is listening on.
+	 */	
 	@Override
 	public String getPort() {
 		return this.port;
 	}
 	
 
-	//Called by connect runnable, changes in state are passed to 
-	//the NetworkManager to be handled.	
+	/**
+	 * Called by connect runnable, changes in state are passed to 
+	 *the NetworkManager to be handled.	
+	 *@param ConnectRunnable Constant integer.
+	 */
 	@Override
 	public void handleConnectState(int state) {
 		
 		int outstate;
-		
 		switch(state){
 		
 		case ConnectRunnable.CONNECT_STATE_CONNECTED:
@@ -98,7 +141,11 @@ public class NetworkTask implements TaskRunnableReceiveMethods, TaskRunnableConn
 		}
 	}
 	
-
+	/**
+	 * Called by ReceiveRunnable, changes in state are passed to 
+	 *the NetworkManager to be handled.	
+	 *@param ReceiveRunnable Constant integer.
+	 */
 	@Override
 	public void handleReceiveState(int state) {
 		int outstate;
@@ -132,18 +179,25 @@ public class NetworkTask implements TaskRunnableReceiveMethods, TaskRunnableConn
 		case ReceiveRunnable.LIBRARY_UPDATE_COMPLETED:
 			outstate = NetworkManager.LIBRARY_UPDATE_COMPLETED;
 			handleState(outstate);
-			sendMessage("Library Update Complete");
+			NetworkCommand nc = new NetworkCommand(NetworkCommand.LIBRARY_UPDATE_COMPLETE, null, null, null);
+			sendMessage(nc);
 			break;
 		}
 		
 	}
 	
-	//passes new state updates to NetworkManager to handle
+	/**
+	 * Passes new state updates to NetworkManager to handle
+	 * @param outstate
+	 */
 	private void handleState(int outstate) {
 		mNetworkManager.handleState(this, outstate);
 	}
 	
-	//Sets Connection Socket From ConnectRunnable and set DataStream to write to
+	/**
+	 * Sets Connection Socket From ConnectRunnable and creates DataStream to write to.
+	 * @param connectedSocket - The socket that the ConnectRunnable used to connect to the server.
+	 */
 	@Override
 	public void setConnectionSocket(Socket connectedSocket) {
 		//Set connection socket to the socket that was created
@@ -167,14 +221,18 @@ public class NetworkTask implements TaskRunnableReceiveMethods, TaskRunnableConn
 		return this.connectionSocket;
 	}
 	
-	//Send simple message over socket, small messages shouldn't need
-	//to be sent on a separate thread.
-	public void sendMessage(String message){
+	/**
+	 * Send simple message over socket, small messages shouldn't need
+	 * to be sent on a separate thread.
+
+	 * @param networkCommand
+	 */
+	public void sendMessage(NetworkCommand networkCommand){
 		
 		if (connectionSocket.isConnected()){
 			
 			try {
-				
+				String message  = networkCommand.writeCommand();
 				message = (message + "\n");
 				output.writeBytes(message);
 				
@@ -190,7 +248,9 @@ public class NetworkTask implements TaskRunnableReceiveMethods, TaskRunnableConn
 	}
 	
 	public void closeConnection(){
-		sendMessage("DISCONNECT");
+		NetworkCommand nc = new NetworkCommand();
+		nc.setCommandType(NetworkCommand.DISCONNECT);
+		sendMessage(nc);
 		try {
 			output.close();
 		} catch (IOException e) {

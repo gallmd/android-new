@@ -38,14 +38,6 @@ public class Constants {
 				
 	}
 	
-	public class Intents{
-		
-		public static final String BROADCAST_ACTION = "com.gall.remote.Broadcast";
-		
-		public static final String EXTENDED_DATA_STATUS = "com.gall.remote.Status";
-		
-	}
-	
 
 	public class ServiceMessages{
 		
@@ -60,8 +52,5 @@ public class Constants {
 		public static final int APPLICATION_EXITING = 6;
 	}
 	
-	public class NetworkMessages{
-		public static final int CONNECT = 1;
-		public static final int SEND_MESSAGE = 2;
-	}
+
 }

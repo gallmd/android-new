@@ -1,7 +1,6 @@
 package com.gall.remote.service;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
@@ -9,8 +8,9 @@ import java.net.SocketException;
 import android.content.Context;
 import android.database.SQLException;
 
-import com.gall.remote.ParseJSON;
+import com.gall.remote.JSONParser;
 import com.gall.remote.DAO.SongDatabaseDAO;
+import com.gall.remote.DTO.NetworkCommand;
 import com.gall.remote.DTO.SongFile;
 
 /**
@@ -22,61 +22,63 @@ public class ReceiveRunnable implements Runnable{
 
 	private boolean bUpdateFlag;
 	private boolean bInCommand;
-	private Context mContextConnect;
-	private ParseJSON parse;
+	private Context mContext;
+	private JSONParser parser;
 	private SongDatabaseDAO db;
-	
+
 	final TaskRunnableReceiveMethods mNetworkTask;
 	private DataInputStream input;
-	private DataOutputStream output;
 	private Socket clientSocket;
-	
+
 	//Receive state flags
-	public static final int DISCONNECTED_FROM_SERVER = 0;
-	public static final int CONNECTION_LOST = 1;
-	public static final int SOCKET_READ_ERROR = 2;
-	public static final int LIBRARY_DELETED = 3;
-	public static final int LIBRARY_UPDATE_IN_PROGRESS = 4;
-	public static final int LIBRARY_UPDATE_COMPLETED = 5;
-	
+	public static final int DISCONNECTED_FROM_SERVER = 100;
+	public static final int CONNECTION_LOST = 101;
+	public static final int SOCKET_READ_ERROR = 102;
+	public static final int LIBRARY_DELETED = 103;
+	public static final int LIBRARY_UPDATE_IN_PROGRESS = 104;
+	public static final int LIBRARY_UPDATE_COMPLETED = 105;
+
+	//Interface implemented by NetworkTask.  The NetworkTask must have these methods.
 	interface TaskRunnableReceiveMethods{
-		
+
 		Socket getConnectionSocket();
-		
+
 		void handleReceiveState(int state);
-		
+
 		Context getContext();
 	}
-	
+
+	//RecieveRunnable obtains a reference to its network task in this constructor.
 	public ReceiveRunnable(TaskRunnableReceiveMethods mNetworkTask) {
+
 		this.mNetworkTask = mNetworkTask;
 	}
 
 	@Override
 	public void run() {
-		
+
 		android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
 		
+		//Get client socket that was set in the NetworkTask by it's ConnectRunnable.
 		clientSocket = mNetworkTask.getConnectionSocket();
-		
-		try {
-			input = new DataInputStream(clientSocket.getInputStream());
-			output = new DataOutputStream(clientSocket.getOutputStream());
-			mContextConnect = mNetworkTask.getContext();
-		} catch (IOException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		}
-		
-		
-		//infinite loop
-		while(clientSocket.isConnected()){
 
-			String message;
-			//receive  message
-			try {
+		try {
+			
+			//Create DataInputStream to read from and get context for database access.
+			input = new DataInputStream(clientSocket.getInputStream());
+			mContext = mNetworkTask.getContext();
+
+			//infinite loop
+			while(clientSocket.isConnected()){
 				
+				//String message received from server.
+				String message;
+				
+				//receive  message
 				message = input.readLine();
+				
+				NetworkCommand command = new NetworkCommand(message);
+				String commandType = command.getCommandType();
 				
 				//handle message
 				//Check if currently in the middle of a multi-message command
@@ -84,28 +86,31 @@ public class ReceiveRunnable implements Runnable{
 					//if not in a command, figure out which command to start
 
 					//update library command
-					if(message.equalsIgnoreCase("update library")){
+					if(commandType.equals(NetworkCommand.UPDATE_LIBRARY)){
+						
 						bUpdateFlag = true;
 						bInCommand = true;
-						parse = new ParseJSON();
-						db = new SongDatabaseDAO(mContextConnect);
+						parser = new JSONParser();
+						db = new SongDatabaseDAO(mContext);
 						mNetworkTask.handleReceiveState(LIBRARY_UPDATE_IN_PROGRESS);
 					}
 
-					if(message.equalsIgnoreCase("delete library")){
-						
-						db = new SongDatabaseDAO(mContextConnect);
-						
+					//delete library command
+					if(commandType.equals(NetworkCommand.DELETE_LIBRARY)){
+
+						db = new SongDatabaseDAO(mContext);
 						db.dropTable();
 						mNetworkTask.handleReceiveState(LIBRARY_DELETED);
-						
-					}
 
-					if(message.equals("DISCONNECT")){
-						
-						break;
-						
 					}
+					
+					//Disconnect command, server is shutting down.
+					if(commandType.equals(NetworkCommand.DISCONNECT)){
+						//Break from while loop
+						break;
+
+					}
+					
 					//Add new commands here
 
 				}else if (bInCommand){
@@ -114,7 +119,7 @@ public class ReceiveRunnable implements Runnable{
 					//update library command
 					if(bUpdateFlag){
 						//check for end of command
-						if(message.equalsIgnoreCase("end of update")){
+						if(commandType.equals(NetworkCommand.LIBRARY_UPDATE_COMPLETE)){
 
 							bUpdateFlag = false;
 							bInCommand = false;
@@ -126,7 +131,7 @@ public class ReceiveRunnable implements Runnable{
 
 							//carry out command
 							SongFile sf = new SongFile();
-							sf = parse.parse(message);
+							sf = parser.parseForDBInsertion(message);
 
 							if(sf!=null){
 
@@ -135,28 +140,34 @@ public class ReceiveRunnable implements Runnable{
 								}catch(SQLException e){
 									e.printStackTrace();
 								}//end catch
-							}
-						}
+								
+							}//end if test checking for null SongFile
+							
+						}//end Command if test
+						
 					}//end update command
 
 					//Add new commands here
 				}
-				
-				//Exiting the while loop means that we disconnected from the server
-				clientSocket.close();
-				mNetworkTask.handleReceiveState(DISCONNECTED_FROM_SERVER);
-				input.close();
 
-			} catch (SocketException e) {
-				mNetworkTask.handleReceiveState(CONNECTION_LOST);
-				e.printStackTrace();
-				
+			}//End While Loop
 
-			} catch (IOException e1) {
-				mNetworkTask.handleReceiveState(SOCKET_READ_ERROR);
-				e1.printStackTrace();
-			} 
-		}
-	}
+			//Exiting the while loop means that we disconnected from the server
+			clientSocket.close();
+			mNetworkTask.handleReceiveState(DISCONNECTED_FROM_SERVER);
+			input.close();
+			Thread.currentThread().interrupt();
+
+		} catch (SocketException e) {
+			mNetworkTask.handleReceiveState(CONNECTION_LOST);
+			e.printStackTrace();
+
+
+		} catch (IOException e1) {
+			mNetworkTask.handleReceiveState(SOCKET_READ_ERROR);
+			e1.printStackTrace();
+		}//End catch 
+
+	}//End run()
 
 }

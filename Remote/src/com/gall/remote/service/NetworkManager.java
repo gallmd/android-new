@@ -1,10 +1,11 @@
 package com.gall.remote.service;
 
-import java.lang.reflect.Array;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import com.gall.remote.DTO.NetworkCommand;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -174,12 +175,12 @@ public class NetworkManager {
 	
 	
 	//Retrieves the current NetworkTask and calls its sendMessage method
-	public static void sendMessageToServer(String message){
+	public static void sendMessageToServer(NetworkCommand networkCommand){
 		
 		NetworkTask sendTask = sInstance.mNetworkTaskQueue.peek();
 		
 		if(sendTask != null){
-			sendTask.sendMessage(message);
+			sendTask.sendMessage(networkCommand);
 		}
 		
 	}

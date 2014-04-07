@@ -5,14 +5,14 @@ import org.json.JSONObject;
 
 import com.gall.remote.DTO.SongFile;
 
-public class ParseJSON {
+public class JSONParser {
 
 private int guid;
 private String title;
 private String artist;
 private String album;
 private int track;
-private int length;
+private String length;
 private SongFile sf;
 
 
@@ -22,12 +22,13 @@ private SongFile sf;
  * 
  * @param jsonString
  */
-public SongFile parse(String jsonString){
+public SongFile parseForDBInsertion(String jsonString){
 	
 	try {
 		
 		//Set JSON object from input string
 		JSONObject jsonData = new JSONObject(jsonString);
+		
 		
 		//get data from JSON object
 		guid = jsonData.getInt("GUID");
@@ -35,7 +36,7 @@ public SongFile parse(String jsonString){
 		artist = jsonData.getString("Artist");
 		album = jsonData.getString("Album");
 		track = jsonData.getInt("Track");
-		length = jsonData.getInt("Length");
+		length = jsonData.getString("Length");
 		
 		sf = new SongFile();
 		sf.setGUID(guid);

@@ -1,7 +1,5 @@
 package com.gall.remote.service;
 
-import java.io.IOException;
-
 import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Intent;
@@ -11,7 +9,7 @@ import android.os.Message;
 import android.os.Messenger;
 
 import com.gall.remote.Constants;
-import com.gall.remote.DTO.SongFile;
+import com.gall.remote.DTO.NetworkCommand;
 
 public class RemoteService extends Service {
 
@@ -30,22 +28,30 @@ public class RemoteService extends Service {
 	class FromUIHandler extends Handler{
 		@Override
 		public void handleMessage(Message msg) {
+			
+			NetworkCommand nc = new NetworkCommand();
 
 			switch(msg.what){
-
+		
 			//Play Button Pressed
 			case Constants.ServiceMessages.PLAY_PRESSED:
-				NetworkManager.sendMessageToServer("Play Pressed");
+				nc.setCommandType(NetworkCommand.BUTTON_PRESSED);
+				nc.setExtra1(NetworkCommand.PLAY_PRESSED);
+				NetworkManager.sendMessageToServer(nc);
 				break;
 
 				//Next Button Pressed
 			case Constants.ServiceMessages.NEXT_PRESSED:
-				NetworkManager.sendMessageToServer("Next Pressed");
+				nc.setCommandType(NetworkCommand.BUTTON_PRESSED);
+				nc.setExtra1(NetworkCommand.NEXT_PRESSED);
+				NetworkManager.sendMessageToServer(nc);
 				break;
 
 				//Previous Button Pressed
 			case Constants.ServiceMessages.PREVIOUS_PRESSED:
-				NetworkManager.sendMessageToServer("Previous Pressed");
+				nc.setCommandType(NetworkCommand.BUTTON_PRESSED);
+				nc.setExtra1(NetworkCommand.PREVIOUS_PRESSED);
+				NetworkManager.sendMessageToServer(nc);
 				break;
 			
 				//Sets Messenger in UI to reply to 
@@ -57,20 +63,14 @@ public class RemoteService extends Service {
 				
 				//Song selected from a SongsFragment
 			case Constants.ServiceMessages.SONG_SELECTED:
-				SongFile sf = (SongFile) msg.obj;
-				try {
-					NetworkManager.sendMessageToServer(sf.writeSimpleJSON());
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				nc = (NetworkCommand) msg.obj;
+				NetworkManager.sendMessageToServer(nc);
 				break;
 				
 			case Constants.ServiceMessages.APPLICATION_EXITING:
 				mNetworkManager.disconnectFromAll();
+				break;
 				
-				
-
 			default:
 				super.handleMessage(msg);
 
@@ -100,7 +100,7 @@ public class RemoteService extends Service {
 	
 	@Override
 	public boolean onUnbind(Intent intent) {
-		stopSelf();
+//		stopSelf();
 		return super.onUnbind(intent);
 	}
 	
