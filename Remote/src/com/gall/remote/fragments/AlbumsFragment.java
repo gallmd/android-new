@@ -83,10 +83,10 @@ public class AlbumsFragment extends ListFragment {
 			//Create fragment transaction and replace with new songs fragment
 			FragmentTransaction trans = getActivity().getFragmentManager().beginTransaction();
 			trans.addToBackStack(album);
-			trans.remove(this);
 			trans.add(R.id.fragmentContainer,  songsFragment);
 
 			trans.commit();
+			
 		}
 	}
 }

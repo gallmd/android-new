@@ -118,6 +118,10 @@ public class ReceiveRunnable implements Runnable{
 
 					//update library command
 					if(bUpdateFlag){
+						
+						if(commandType == null)
+							commandType = "";
+						
 						//check for end of command
 						if(commandType.equals(NetworkCommand.LIBRARY_UPDATE_COMPLETE)){
 

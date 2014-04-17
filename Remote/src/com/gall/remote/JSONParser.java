@@ -15,6 +15,8 @@ private int track;
 private String length;
 private SongFile sf;
 
+//TODO Remove this class and add parsing functionality to SongFile,
+//JSON string will come from a NetworkCommand "Extra" field
 
 /**
  * Recv's JSON data for song info one song at a time.

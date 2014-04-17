@@ -77,7 +77,6 @@ public class ArtistsFragment extends ListFragment {
 			//Create fragment transaction and replace with new songs fragment
 			FragmentTransaction trans = getActivity().getFragmentManager().beginTransaction();
 			trans.addToBackStack(artist);
-			trans.remove(this);
 			trans.add(R.id.fragmentContainer,  albumsFragment);
 
 			trans.commit();

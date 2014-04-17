@@ -1,9 +1,5 @@
 package com.gall.remote;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.lang.reflect.Field;
 
 import android.annotation.SuppressLint;
@@ -15,7 +11,6 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -29,6 +24,7 @@ import android.view.ViewConfiguration;
 import android.widget.SlidingDrawer;
 import android.widget.Toast;
 
+import com.gall.remote.fragments.viewPagerFragment;
 import com.gall.remote.service.NetworkManager;
 import com.gall.remote.service.RemoteService;
 
@@ -66,8 +62,8 @@ public class MusicChooser extends FragmentActivity{
 		transaction.add(R.id.fragmentContainer, viewPagerFragment);
 		transaction.addToBackStack("Remote");
 		transaction.commit();
-
-
+		
+		
 		//Force overflow menu items to actionBar
 		try {
 			ViewConfiguration config = ViewConfiguration.get(this);
@@ -181,10 +177,12 @@ public class MusicChooser extends FragmentActivity{
 				if(backStackCount > 2){
 					//Set action bar to back stack name
 					getActionBar().setTitle(entryName);
-				}else{
+				}else if(backStackCount == 2){
 					//if we popped back to the home fragment tabs, set the action bar title back to "Remote"
 					getActionBar().setTitle("Remote");
 				}
+			}else{
+				super.onBackPressed();
 			}
 		}else{
 			//if the drawer is open, close it
@@ -203,53 +201,53 @@ public class MusicChooser extends FragmentActivity{
 		
 		//Launch settings menu
 		case R.id.action_settings:
-//			Intent settingsIntent = new Intent(this, UserPreferencesActivity.class);
-//			startActivity(settingsIntent);
+			Intent settingsIntent = new Intent(this, UserPreferencesActivity.class);
+			startActivity(settingsIntent);
 			
 			//Dumps database to sd card so it can be copied to a computer and viewed.
-			File f=new File("/data/data/com.gall.remote/databases/remotesongdatabase.db");
-			FileInputStream fis=null;
-			FileOutputStream fos=null;
-
-			try
-			{
-			  fis=new FileInputStream(f);
-			  File root = Environment.getExternalStorageDirectory();
-			  
-			  File dir = new File(root.getAbsolutePath() + "/database");
-			  dir.mkdirs();
-			  
-			  File newFile = new File(dir, "database_dump.db");
-			  
-			  
-			  fos=new FileOutputStream(newFile);
-			  while(true)
-			  {
-			    int i=fis.read();
-			    if(i!=-1)
-			    {fos.write(i);}
-			    else
-			    {break;}
-			  }
-			  fos.flush();
-			  Toast.makeText(this, "DB dump OK", Toast.LENGTH_LONG).show();
-			}
-			catch(Exception e)
-			{
-			  e.printStackTrace();
-			  Toast.makeText(this, "DB dump ERROR", Toast.LENGTH_LONG).show();
-			}
-			finally
-			{
-			  try
-			  {
-			    fos.close();
-			    fis.close();
-			  }
-			  catch(IOException ioe)
-			  {}
-			}
-			break;
+//			File f=new File("/data/data/com.gall.remote/databases/remotesongdatabase.db");
+//			FileInputStream fis=null;
+//			FileOutputStream fos=null;
+//
+//			try
+//			{
+//			  fis=new FileInputStream(f);
+//			  File root = Environment.getExternalStorageDirectory();
+//			  
+//			  File dir = new File(root.getAbsolutePath() + "/database");
+//			  dir.mkdirs();
+//			  
+//			  File newFile = new File(dir, "database_dump.db");
+//			  
+//			  
+//			  fos=new FileOutputStream(newFile);
+//			  while(true)
+//			  {
+//			    int i=fis.read();
+//			    if(i!=-1)
+//			    {fos.write(i);}
+//			    else
+//			    {break;}
+//			  }
+//			  fos.flush();
+//			  Toast.makeText(this, "DB dump OK", Toast.LENGTH_LONG).show();
+//			}
+//			catch(Exception e)
+//			{
+//			  e.printStackTrace();
+//			  Toast.makeText(this, "DB dump ERROR", Toast.LENGTH_LONG).show();
+//			}
+//			finally
+//			{
+//			  try
+//			  {
+//			    fos.close();
+//			    fis.close();
+//			  }
+//			  catch(IOException ioe)
+//			  {}
+//			}
+//			break;
 		}
 
 		return super.onMenuItemSelected(featureId, item);

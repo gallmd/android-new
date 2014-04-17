@@ -247,7 +247,11 @@ public class NetworkTask implements TaskRunnableReceiveMethods, TaskRunnableConn
 		return mContext;
 	}
 	
+	/**
+	 * Called from NetworkManager when the connection is to be closed.
+	 */
 	public void closeConnection(){
+		
 		NetworkCommand nc = new NetworkCommand();
 		nc.setCommandType(NetworkCommand.DISCONNECT);
 		sendMessage(nc);
@@ -257,7 +261,7 @@ public class NetworkTask implements TaskRunnableReceiveMethods, TaskRunnableConn
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
 	}
-
 
 }

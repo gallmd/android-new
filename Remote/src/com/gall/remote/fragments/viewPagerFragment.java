@@ -1,4 +1,4 @@
-package com.gall.remote;
+package com.gall.remote.fragments;
 
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
@@ -9,6 +9,10 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
 import android.view.View;
 
+import com.gall.remote.MusicChooserPageChangeListener;
+import com.gall.remote.R;
+import com.gall.remote.R.id;
+import com.gall.remote.R.layout;
 import com.gall.remote.adapters.MusicChooserTabAdaper;
 
 
